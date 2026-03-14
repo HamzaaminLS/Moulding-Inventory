@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Little Star Inventory v3</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    body{margin:0;padding:0;background:#0f1117;overflow-x:hidden}
+    html,body{overscroll-behavior-y:contain}
+    input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+    input[type=number]{-moz-appearance:textfield}
+    ::-webkit-scrollbar{height:3px;width:3px}
+    ::-webkit-scrollbar-thumb{background:#4f8cff44;border-radius:4px}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const{useState,useEffect,useCallback,useRef,useMemo}=React;
+
+const BIN_ID="69b5043fc3097a1dd523b73b";
+const API_KEY="$2a$10$I3uAdHs5eeSRBspEzXS4Vu9Q5TJMyMC/Y/xLf72UmV5.pSZgsRTeG";
+const STORE_KEY="littlestar-inv-v3";
+const AUTH_KEY="littlestar-auth-v3";
+const PASS="hamza";
+
+const CLR={
+  pink:{bg:"#f472b6",fg:"#fff",lb:"Pink"},
+  blue:{bg:"#60a5fa",fg:"#fff",lb:"Blue"},
+  red:{bg:"#ef4444",fg:"#fff",lb:"Red"},
+  darkblue:{bg:"#1d4ed8",fg:"#fff",lb:"D.Blue"},
+  universal:{bg:"#9ca3af",fg:"#fff",lb:"Univ."}
+};
+
+const PRODUCTS={
+  sprinter:{name:"Sprinter",icon:"🏍️"},
+  stroller:{name:"Stroller",icon:"👶"},
+  twilight:{name:"Twilight",icon:"🌙"},
+  tolo:{name:"Tolo",icon:"🚗"}
+};
+
+const PARTS=[
+  {id:"sp_body",n:"Body",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_capnip",n:"Cap / Nip1 / Nip2",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_fwheel",n:"Front Wheel",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_handlecell",n:"Handle / Cell",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_bwheel",n:"Back Wheel",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_madgad",n:"Madgad",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_wcap",n:"Wheel Cap",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_takeseat",n:"Take / Seat Ring",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_mutthi",n:"Mutthi",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_wring",n:"Wheel Ring",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_chashmahr",n:"Chashma / Handle Ring",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_take",n:"Take",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_smirror",n:"Side Mirror",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_seat",n:"Seat",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_silencer",n:"Silencer",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_mirror",n:"Mirror",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_shade",n:"Shade",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_pedal",n:"Pedal",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_btncrys",n:"Button / SM (Crystal)",p:"sprinter",c:["universal"],per:1},
+  {id:"sp_hlglass",n:"Headlight Glass (Crystal)",p:"sprinter",c:["universal"],per:1},
+  {id:"sp_chokri",n:"Chokri",p:"sprinter",c:["universal"],per:1},
+  {id:"sp_chashmaabs",n:"Chashma (ABS)",p:"sprinter",c:["universal"],per:1},
+
+  {id:"st_body",n:"Body",p:"stroller",c:["pink","blue","red"],per:1},
+  {id:"st_footrest",n:"Footrest",p:"stroller",c:["universal"],per:1},
+  {id:"st_wheel",n:"Wheel",p:"stroller",c:["universal"],per:1},
+  {id:"st_arm",n:"Arm",p:"stroller",c:["pink","blue","red"],per:1},
+  {id:"st_bumper",n:"Bumper",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_take",n:"Take",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_bonnet",n:"Bonnet",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_wrsq",n:"Wheel Ring Square",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_steerring",n:"Steering Ring",p:"stroller",c:["pink","blue","red"],per:1},
+  {id:"st_seat",n:"Seat",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_steerup",n:"Steering Upper",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_steerlow",n:"Steering Lower",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_smirror",n:"Side Mirror",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_rlcrys",n:"Rearlight / Sidemirror (Crystal)",p:"stroller",c:["universal"],per:1},
+  {id:"st_hlglass",n:"Headlight Glass (Crystal)",p:"stroller",c:["universal"],per:1},
+  {id:"st_rearabs",n:"Rear / Exhaust / Logo (ABS)",p:"stroller",c:["universal"],per:1},
+  {id:"st_takepc",n:"Take Piece (3)",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_armlockb",n:"Armlock(2) / Bailcha(3)",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_hlfabs",n:"Headlight / Foglight / Radiator (ABS)",p:"stroller",c:["universal"],per:1},
+  {id:"st_bailcha",n:"Bailcha (Misc)",p:"stroller",c:["universal"],per:1},
+
+  {id:"tw_body",n:"Body",p:"twilight",c:["pink","blue"],per:1},
+  {id:"tw_wheel",n:"Wheel",p:"twilight",c:["universal"],per:1},
+  {id:"tw_take",n:"Take",p:"twilight",c:["pink","blue"],per:1},
+  {id:"tw_abc123",n:"Abc 123",p:"twilight",c:["universal"],per:1},
+  {id:"tw_bonnet",n:"Bonnet / LR44 PP",p:"twilight",c:["pink","blue"],per:1},
+  {id:"tw_steering",n:"Steering",p:"twilight",c:["pink","blue"],per:1},
+  {id:"tw_seattrunk",n:"Seat / Trunk",p:"twilight",c:["pink","blue"],per:1},
+  {id:"tw_glasscap",n:"Glasscap / Lower Ring / Punja / Patti / Button / Tail",p:"twilight",c:["pink","blue"],per:1},
+  {id:"tw_pipe",n:"Pipe",p:"twilight",c:["universal"],per:1},
+  {id:"tw_abcback",n:"Abc Black Back",p:"twilight",c:["universal"],per:1},
+  {id:"tw_baja",n:"Baja / 2Piece / Kaan",p:"twilight",c:["pink","blue"],per:1},
+  {id:"tw_wcap",n:"Wheelcap",p:"twilight",c:["pink","blue"],per:1},
+  {id:"tw_iwcap",n:"Inner Wheelcap",p:"twilight",c:["pink","blue"],per:1},
+  {id:"tw_petglass",n:"Pet Glass",p:"twilight",c:["universal"],per:1},
+
+  {id:"to_body",n:"Body",p:"tolo",c:["pink","blue"],per:1},
+  {id:"to_bonnet",n:"Bonnet",p:"tolo",c:["pink","blue"],per:1},
+  {id:"to_wheelwc",n:"Wheel / Wheel Cap",p:"tolo",c:["universal"],per:1},
+  {id:"to_seatbump",n:"Seat / Bumper",p:"tolo",c:["pink","blue"],per:1},
+  {id:"to_take",n:"Take",p:"tolo",c:["pink","blue"],per:1},
+  {id:"to_wcap",n:"WheelCap",p:"tolo",c:["pink","blue"],per:1},
+  {id:"to_steering",n:"Steering",p:"tolo",c:["pink","blue"],per:1},
+  {id:"to_armface",n:"Arm / Arm Holder / Take Face",p:"tolo",c:["pink","blue"],per:1},
+  {id:"to_hlglass",n:"Headlight Glass",p:"tolo",c:["universal"],per:1},
+  {id:"to_hlinner",n:"Headlight Inner / Music Piece / Baja Cap",p:"tolo",c:["pink","blue"],per:1},
+];
+
+const CROSS_PARTS=[
+  {id:"cx_pipe",n:"Stroller & Tolo Pipe",c:["universal"],per:1,products:["stroller","tolo"]}
+];
+
+const ALL_PARTS=[...PARTS,...CROSS_PARTS];
+
+function getProductParts(pid){
+  const own=PARTS.filter(p=>p.p===pid);
+  const cross=CROSS_PARTS.filter(cp=>cp.products.includes(pid));
+  return[...own,...cross];
+}
+
+function getAssemblableColors(pid){
+  const pp=getProductParts(pid);
+  const allC=new Set();
+  pp.forEach(p=>p.c.forEach(c=>{if(c!=="universal")allC.add(c)}));
+  return[...allC].filter(color=>pp.every(p=>p.c.includes(color)||p.c.includes("universal")));
+}
+
+function initStock(){
+  const s={};
+  ALL_PARTS.forEach(p=>{s[p.id]={};p.c.forEach(c=>{s[p.id][c]=0})});
+  return s;
+}
+
+function calcMax(pid,color,stock){
+  const pp=getProductParts(pid);
+  let m=Infinity;
+  for(const p of pp){
+    if(p.c.includes("universal")){
+      m=Math.min(m,Math.floor((stock[p.id]?.universal||0)/(p.per||1)));
+    }else if(p.c.includes(color)){
+      m=Math.min(m,Math.floor((stock[p.id]?.[color]||0)/(p.per||1)));
+    }else return 0;
+  }
+  return m===Infinity?0:m;
+}
+
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function fmtTS(ts){
+  const d=new Date(ts);
+  const dd=String(d.getDate()).padStart(2,"0"),mm=String(d.getMonth()+1).padStart(2,"0"),yy=String(d.getFullYear()).slice(2);
+  let h=d.getHours();const ap=h>=12?"PM":"AM";h=h%12||12;
+  return`${dd}/${mm}/${yy} ${h}:${String(d.getMinutes()).padStart(2,"0")} ${ap}`;
+}
+
+function ColorBadge({color,size=12}){
+  const c=CLR[color]||CLR.universal;
+  return <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",minWidth:size*3,height:size*1.4,borderRadius:4,background:c.bg,color:c.fg,fontSize:size*0.7,fontWeight:800,letterSpacing:.3,padding:"0 4px",flexShrink:0}}>{c.lb}</span>;
+}
+
+function App(){
+  const[authed,setAuthed]=useState(false);
+  const[pw,setPw]=useState("");
+  const[pwErr,setPwErr]=useState(false);
+  const[remember,setRemember]=useState(false);
+  const[dark,setDark]=useState(true);
+  const[mainTab,setMainTab]=useState("products");
+  const[prodTab,setProdTab]=useState("sprinter");
+  const[stock,setStock]=useState(initStock);
+  const[logs,setLogs]=useState([]);
+  const[confirmed,setConfirmed]=useState({});
+  const[notes,setNotes]=useState("");
+  const[threshold,setThreshold]=useState(300);
+  const[loaded,setLoaded]=useState(false);
+  const[syncing,setSyncing]=useState(false);
+  const[dirty,setDirty]=useState(false);
+  const[lastSync,setLastSync]=useState(null);
+  const[toast,setToast]=useState(null);
+  const[editing,setEditing]=useState(null);
+  const[editVal,setEditVal]=useState("");
+  const[asmColor,setAsmColor]=useState({});
+  const[asmQty,setAsmQty]=useState({});
+  const[confirmAsm,setConfirmAsm]=useState(null);
+  const[showSettings,setShowSettings]=useState(false);
+  const[showClear,setShowClear]=useState(false);
+  const[logFilter,setLogFilter]=useState("all");
+  const[stockFilter,setStockFilter]=useState("all");
+  const debounceRef=useRef(null);
+  const notesRef=useRef(null);
+
+  const showToast=useCallback((msg,type="ok")=>{
+    setToast({msg,type});setTimeout(()=>setToast(null),2500);
+  },[]);
+
+  useEffect(()=>{if(localStorage.getItem(AUTH_KEY)===PASS)setAuthed(true)},[]);
+
+  const doLogin=(e)=>{
+    e.preventDefault();
+    if(pw===PASS){setAuthed(true);if(remember)localStorage.setItem(AUTH_KEY,PASS)}
+    else{setPwErr(true);setTimeout(()=>setPwErr(false),2000)}
+  };
+  const doLogout=()=>{localStorage.removeItem(AUTH_KEY);setAuthed(false);setPw("")};
+
+  const serialize=useCallback(()=>({stock,logs:logs.slice(0,200),confirmed,notes,threshold,updatedAt:Date.now()}),[stock,logs,confirmed,notes,threshold]);
+
+  const pullCloud=useCallback(async()=>{
+    setSyncing(true);
+    try{
+      const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,{headers:{"X-Master-Key":API_KEY}});
+      const j=await r.json();
+      if(j.record&&j.record.stock){
+        const d=j.record;
+        const merged={...initStock()};
+        Object.keys(d.stock||{}).forEach(k=>{if(merged[k]||ALL_PARTS.find(p=>p.id===k))merged[k]={...(merged[k]||{}),...d.stock[k]}});
+        setStock(merged);setLogs(d.logs||[]);setConfirmed(d.confirmed||{});
+        if(d.threshold)setThreshold(d.threshold);if(d.notes!=null)setNotes(d.notes);
+        localStorage.setItem(STORE_KEY,JSON.stringify({...d,stock:merged}));
+        setLastSync(new Date());setDirty(false);setSyncing(false);return true;
+      }
+    }catch(e){console.error("Pull err:",e)}
+    setSyncing(false);return false;
+  },[]);
+
+  const pushCloud=useCallback(async(data)=>{
+    setSyncing(true);
+    try{
+      const payload=data||serialize();
+      const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":API_KEY},body:JSON.stringify(payload)});
+      if(r.ok){localStorage.setItem(STORE_KEY,JSON.stringify(payload));setLastSync(new Date());setDirty(false);showToast("Saved to Cloud!")}
+      else showToast("Cloud save failed","err");
+    }catch(e){showToast("Network error","err")}
+    setSyncing(false);
+  },[serialize,showToast]);
+
+  const markDirty=useCallback(()=>{
+    setDirty(true);
+    clearTimeout(debounceRef.current);
+    debounceRef.current=setTimeout(()=>{
+      const data={stock,logs:logs.slice(0,200),confirmed,notes,threshold,updatedAt:Date.now()};
+      localStorage.setItem(STORE_KEY,JSON.stringify(data));
+    },500);
+  },[stock,logs,confirmed,notes,threshold]);
+
+  useEffect(()=>{
+    if(!authed)return;
+    const init=async()=>{
+      const local=localStorage.getItem(STORE_KEY);
+      if(local){try{
+        const d=JSON.parse(local);
+        const merged={...initStock()};
+        Object.keys(d.stock||{}).forEach(k=>{if(merged[k]||ALL_PARTS.find(p=>p.id===k))merged[k]={...(merged[k]||{}),...d.stock[k]}});
+        setStock(merged);setLogs(d.logs||[]);setConfirmed(d.confirmed||{});setThreshold(d.threshold||300);setNotes(d.notes||"");
+      }catch(e){}}
+      setLoaded(true);await pullCloud();
+    };init();
+  },[authed,pullCloud]);
+
+  const mkLog=(action,detail,product)=>({id:genId(),ts:Date.now(),a:action,d:detail,p:product});
+
+  const doAssemble=(pid)=>{
+    const aColors=getAssemblableColors(pid);
+    const color=asmColor[pid]||aColors[0];const qty=parseInt(asmQty[pid])||0;
+    if(!color){showToast("No assemblable color","err");return}
+    if(qty<=0){showToast("Enter quantity","err");return}
+    setConfirmAsm({pid,color,qty});
+  };
+
+  const confirmDoAssemble=()=>{
+    const{pid,color,qty}=confirmAsm;
+    const pp=getProductParts(pid);const ns={...stock};
+    pp.forEach(p=>{
+      const k=p.c.includes("universal")?"universal":color;
+      if(!ns[p.id])ns[p.id]={};
+      ns[p.id][k]=Math.max(0,(ns[p.id][k]||0)-qty*(p.per||1));
+    });
+    const pName=PRODUCTS[pid]?.name||pid;
+    const entry=mkLog("assemble",`${qty} ${CLR[color]?.lb||color} ${pName}${qty>1?"s":""}`,pid);
+    const nl=[entry,...logs].slice(0,200);
+    setStock(ns);setLogs(nl);setAsmQty(q=>({...q,[pid]:""}));setConfirmAsm(null);markDirty();
+    showToast(`Assembled ${qty} ${CLR[color]?.lb} ${pName}!`);
+  };
+
+  const saveStock=(partId,color)=>{
+    const val=parseInt(editVal);if(isNaN(val)){showToast("Enter number","err");return}
+    const ns={...stock};if(!ns[partId])ns[partId]={};
+    const old=ns[partId][color]||0;const nv=Math.max(0,val);
+    ns[partId]={...ns[partId],[color]:nv};
+    const part=ALL_PARTS.find(p=>p.id===partId);
+    const entry=mkLog("stock_edit",`${part?.n||partId} [${CLR[color]?.lb||color}]: ${old}→${nv}`,part?.p||"cross");
+    const nl=[entry,...logs].slice(0,200);
+    setStock(ns);setLogs(nl);setEditing(null);setEditVal("");markDirty();showToast("Stock updated");
+  };
+
+  const quickAdjust=(partId,color,delta)=>{
+    const ns={...stock};if(!ns[partId])ns[partId]={};
+    const old=ns[partId][color]||0;const nv=Math.max(0,old+delta);
+    ns[partId]={...ns[partId],[color]:nv};
+    const part=ALL_PARTS.find(p=>p.id===partId);
+    const entry=mkLog("adjust",`${part?.n||partId} [${CLR[color]?.lb||color}]: ${old}→${nv} (${delta>0?"+":""}${delta})`,part?.p||"cross");
+    const nl=[entry,...logs].slice(0,200);
+    setStock(ns);setLogs(nl);setEditing(null);setEditVal("");markDirty();
+  };
+
+  const toggleConfirm=(partId)=>{
+    const nc={...confirmed};
+    if(nc[partId])delete nc[partId];else nc[partId]=Date.now();
+    setConfirmed(nc);markDirty();
+  };
+  const resetConfirm=()=>{setConfirmed({});markDirty();showToast("Confirmations reset")};
+
+  const deleteLog=(lid)=>{setLogs(logs.filter(l=>l.id!==lid));markDirty()};
+  const clearLogs=()=>{setLogs([]);markDirty();showToast("Logs cleared")};
+
+  const handleNotes=(val)=>{
+    setNotes(val);clearTimeout(notesRef.current);
+    notesRef.current=setTimeout(()=>markDirty(),800);
+  };
+
+  const doExportJSON=()=>{
+    const payload=serialize();payload.exportedAt=new Date().toISOString();
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+    a.download=`littlestar_backup_${new Date().toISOString().slice(0,10)}.json`;a.click();
+  };
+
+  const doExportCSV=()=>{
+    let csv="Product,Part,Color,Stock\n";
+    ALL_PARTS.forEach(part=>{
+      const prod=part.p==="cross"?"cross":(PRODUCTS[part.p]?.name||part.p);
+      part.c.forEach(c=>{
+        csv+=`"${prod}","${part.n}","${CLR[c]?.lb||c}",${stock[part.id]?.[c]||0}\n`;
+      });
+    });
+    CROSS_PARTS.forEach(cp=>{
+      cp.c.forEach(c=>{
+        csv+=`"Cross (${cp.products.map(p=>PRODUCTS[p]?.name).join(' & ')})","${cp.n}","${CLR[c]?.lb||c}",${stock[cp.id]?.[c]||0}\n`;
+      });
+    });
+    const blob=new Blob([csv],{type:"text/csv"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+    a.download=`littlestar_stock_${new Date().toISOString().slice(0,10)}.csv`;a.click();
+  };
+
+  const handleImport=(e)=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=(ev)=>{
+      try{
+        const d=JSON.parse(ev.target.result);
+        if(d.stock){
+          const merged={...initStock()};
+          Object.keys(d.stock).forEach(k=>{if(merged[k])merged[k]={...merged[k],...d.stock[k]}});
+          setStock(merged);setLogs(d.logs||[]);setConfirmed(d.confirmed||{});
+          if(d.threshold)setThreshold(d.threshold);if(d.notes!=null)setNotes(d.notes);
+          markDirty();showToast("Imported successfully!");
+        }else showToast("Invalid format","err");
+      }catch(err){showToast("Error reading file","err")}
+    };reader.readAsText(file);e.target.value="";
+  };
+
+  const wipeData=()=>{setStock(initStock());setLogs([]);setConfirmed({});setNotes("");markDirty();showToast("All data wiped","err")};
+
+  const dataSize=useMemo(()=>{
+    const j=JSON.stringify(serialize());return(new Blob([j]).size/1024).toFixed(1);
+  },[serialize]);
+
+  // THEME
+  const bg=dark?"#0f1117":"#f3f4f6";
+  const card=dark?"#1a1d27":"#ffffff";
+  const cb=dark?"#2a2d3a":"#e0e0e0";
+  const tx=dark?"#e8e8e8":"#1a1a1a";
+  const txd=dark?"#8b8fa3":"#888888";
+  const acc="#4f8cff";
+  const okC="#22c55e";const dnC="#ef4444";const wnC="#f59e0b";
+
+  const S={
+    app:{fontFamily:"'Nunito',sans-serif",background:bg,color:tx,minHeight:"100vh",maxWidth:520,margin:"0 auto",paddingBottom:72,fontSize:15,WebkitFontSmoothing:"antialiased"},
+    crd:{background:card,border:`1px solid ${cb}`,borderRadius:12,margin:"6px 10px",padding:"10px 12px"},
+    btn:(b,c="#fff")=>({background:b,color:c,border:"none",borderRadius:8,padding:"9px 14px",fontWeight:700,fontSize:13,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",gap:5}),
+    inp:{background:dark?"#252836":"#f0f0ec",border:`1px solid ${cb}`,borderRadius:8,padding:"8px 10px",color:tx,fontSize:14,fontFamily:"'Nunito',sans-serif",width:"100%",boxSizing:"border-box",outline:"none"},
+    lbl:{fontSize:11,fontWeight:700,color:txd,marginBottom:3,display:"block",textTransform:"uppercase",letterSpacing:.5},
+    tag:(c)=>({display:"inline-block",padding:"2px 8px",borderRadius:12,fontSize:11,fontWeight:700,background:c+"22",color:c}),
+    nav:{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:520,background:dark?"#161822":"#fff",borderTop:`1px solid ${cb}`,display:"flex",zIndex:100},
+    nI:(a)=>({flex:1,padding:"8px 0 10px",textAlign:"center",background:"none",border:"none",color:a?acc:txd,fontSize:10,fontWeight:a?800:600,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}),
+    toast:{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",background:toast?.type==="err"?dnC:okC,color:"#fff",padding:"10px 22px",borderRadius:10,fontWeight:700,fontSize:13,zIndex:9999,boxShadow:"0 4px 20px rgba(0,0,0,.4)",fontFamily:"'Nunito',sans-serif",maxWidth:"90%",textAlign:"center"},
+    subNav:{display:"flex",overflowX:"auto",gap:0,background:dark?"#161822cc":"#ffffffcc",backdropFilter:"blur(8px)",borderBottom:`1px solid ${cb}`,position:"sticky",top:0,zIndex:90},
+    subNI:(a)=>({padding:"10px 14px",whiteSpace:"nowrap",background:"none",border:"none",borderBottom:a?`2px solid ${acc}`:"2px solid transparent",color:a?acc:txd,fontSize:13,fontWeight:a?800:600,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"flex",alignItems:"center",gap:4}),
+  };
+
+  // LOGIN
+  if(!authed)return(
+    <div style={{display:"flex",justifyContent:"center",alignItems:"center",height:"100vh",background:"#0f1117",color:"#e8e8e8",fontFamily:"'Nunito',sans-serif"}}>
+      <form onSubmit={doLogin} style={{background:"#1a1d27",padding:"36px 28px",borderRadius:16,textAlign:"center",width:320,border:"1px solid #2a2d3a",boxShadow:"0 10px 30px rgba(0,0,0,.5)"}}>
+        <div style={{fontSize:36,marginBottom:8}}>🏭</div>
+        <h2 style={{margin:"0 0 18px",fontSize:20,fontWeight:900}}>Little Star Inventory</h2>
+        <input type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="Enter password" autoFocus
+          style={{width:"100%",padding:12,marginBottom:10,borderRadius:8,border:"1px solid #2a2d3a",background:"#252836",color:"#fff",fontSize:15,boxSizing:"border-box",outline:"none"}}/>
+        <label style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,color:"#8b8fa3",fontSize:13,marginBottom:16,cursor:"pointer"}}>
+          <input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)} style={{cursor:"pointer",width:16,height:16}}/>
+          Remember me
+        </label>
+        {pwErr&&<div style={{color:dnC,marginBottom:12,fontSize:13,fontWeight:700}}>Incorrect password</div>}
+        <button type="submit" style={{width:"100%",padding:13,borderRadius:8,border:"none",background:acc,color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>Unlock</button>
+      </form>
+    </div>
+  );
+
+  // LOADING
+  if(!loaded)return(
+    <div style={{...S.app,display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh"}}>
+      <div style={{textAlign:"center"}}><div style={{fontSize:36,marginBottom:10}}>🏭</div>
+      <div style={{fontSize:17,fontWeight:800}}>Little Star</div>
+      <div style={{color:txd,marginTop:4,fontSize:13}}>Connecting...</div></div>
+    </div>
+  );
+
+  // PART ROW COMPONENT
+  const PartRow=({part,showProduct,showConfirm})=>{
+    const s=stock[part.id]||{};
+    const isConf=!!confirmed[part.id];
+    const isCross=!!part.products;
+    return(
+      <div style={{...S.crd,padding:"8px 10px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,flexWrap:"wrap"}}>
+          {showConfirm&&<span onClick={()=>toggleConfirm(part.id)} style={{cursor:"pointer",fontSize:16}}>{isConf?"✅":"⬜"}</span>}
+          {isConf&&!showConfirm&&<span style={{fontSize:10,color:okC}}>✓</span>}
+          <span style={{fontWeight:800,fontSize:13,flex:1}}>{part.n}</span>
+          {isCross&&<span style={{fontSize:9,background:acc+"22",color:acc,padding:"1px 6px",borderRadius:8,fontWeight:700}}>CROSS</span>}
+          {showProduct&&<span style={{fontSize:9,background:txd+"33",color:txd,padding:"1px 6px",borderRadius:8,fontWeight:700}}>{part.products?"Cross":PRODUCTS[part.p]?.name||part.p}</span>}
+          <span style={{fontSize:10,color:txd}}>×{part.per}/unit</span>
+        </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+          {part.c.map(c=>{
+            const key=`${part.id}_${c}`;
+            const val=s[c]||0;
+            const isEdit=editing===key;
+            if(isEdit)return(
+              <div key={c} style={{display:"flex",alignItems:"center",gap:3,background:dark?"#252836":"#f0f0ec",borderRadius:8,padding:"4px 6px"}}>
+                <ColorBadge color={c} size={10}/>
+                <input type="number" inputMode="numeric" autoFocus value={editVal} onChange={e=>setEditVal(e.target.value)}
+                  onKeyDown={e=>{if(e.key==="Enter")saveStock(part.id,c);if(e.key==="Escape")setEditing(null)}}
+                  style={{...S.inp,width:56,padding:"4px 6px",fontSize:14,textAlign:"center",fontWeight:800}}/>
+                <button onClick={()=>quickAdjust(part.id,c,10)} style={{...S.btn(okC),padding:"4px 8px",fontSize:11,minWidth:0}}>+10</button>
+                <button onClick={()=>quickAdjust(part.id,c,-10)} style={{...S.btn(dnC),padding:"4px 8px",fontSize:11,minWidth:0}}>-10</button>
+                <button onClick={()=>saveStock(part.id,c)} style={{...S.btn(okC),padding:"4px 8px",fontSize:12,minWidth:0}}>✓</button>
+                <button onClick={()=>setEditing(null)} style={{...S.btn(dark?"#444":"#ccc",tx),padding:"4px 8px",fontSize:12,minWidth:0}}>✕</button>
+              </div>
+            );
+            return(
+              <div key={c} onClick={()=>{setEditing(key);setEditVal(String(val))}}
+                style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer",background:dark?"#252836":"#f0f0ec",borderRadius:8,padding:"4px 8px",border:`1px solid ${cb}`}}>
+                <ColorBadge color={c} size={9}/>
+                <span style={{fontWeight:900,fontSize:14,fontVariantNumeric:"tabular-nums",color:val<=0?dnC:tx,minWidth:28,textAlign:"right"}}>{val.toLocaleString()}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // PRODUCT TAB CONTENT
+  const ProductView=({pid})=>{
+    const pp=getProductParts(pid);
+    const aColors=getAssemblableColors(pid);
+    const colored=pp.filter(p=>!p.c.includes("universal"));
+    const univ=pp.filter(p=>p.c.includes("universal"));
+    const selColor=asmColor[pid]||aColors[0]||"";
+
+    return(
+      <div>
+        {/* ASSEMBLE */}
+        <div style={{...S.crd,border:`1.5px solid ${acc}44`}}>
+          <div style={{fontSize:14,fontWeight:800,marginBottom:8}}>🔧 Assemble {PRODUCTS[pid]?.name}</div>
+          <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+            {aColors.map(c=>(
+              <button key={c} onClick={()=>setAsmColor(a=>({...a,[pid]:c}))}
+                style={{...S.btn(selColor===c?CLR[c].bg:"transparent",selColor===c?"#fff":CLR[c].bg),border:`2px solid ${CLR[c].bg}`,padding:"6px 12px",fontSize:12,flex:1,minWidth:60}}>
+                {CLR[c].lb}
+              </button>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:6,marginBottom:6}}>
+            <input type="number" inputMode="numeric" placeholder="Qty" value={asmQty[pid]||""} onChange={e=>setAsmQty(q=>({...q,[pid]:e.target.value}))}
+              style={{...S.inp,flex:1,fontSize:16,fontWeight:700,textAlign:"center"}}/>
+            <button onClick={()=>doAssemble(pid)} style={{...S.btn(okC),fontSize:14,padding:"9px 18px"}}>✅ Make</button>
+          </div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>
+            {aColors.map(c=>{
+              const mx=calcMax(pid,c,stock);
+              return <span key={c} style={{fontSize:11,fontWeight:700,color:CLR[c].bg}}>Can make {mx} {CLR[c].lb}</span>;
+            })}
+          </div>
+        </div>
+
+        {/* COLORED PARTS */}
+        {colored.length>0&&<div style={{padding:"8px 12px 2px",fontSize:11,fontWeight:800,color:txd,textTransform:"uppercase",letterSpacing:1}}>Colored Parts ({colored.length})</div>}
+        {colored.map(p=><PartRow key={p.id} part={p}/>)}
+
+        {/* UNIVERSAL PARTS */}
+        {univ.length>0&&<div style={{padding:"8px 12px 2px",fontSize:11,fontWeight:800,color:txd,textTransform:"uppercase",letterSpacing:1}}>Universal Parts ({univ.length})</div>}
+        {univ.map(p=><PartRow key={p.id} part={p}/>)}
+      </div>
+    );
+  };
+
+  // CROSS VIEW
+  const CrossView=()=>(
+    <div>
+      <div style={{padding:"10px 12px 4px",fontSize:14,fontWeight:800}}>🔗 Cross-Compatible Parts</div>
+      <div style={{padding:"0 12px 6px",fontSize:12,color:txd}}>Shared stock across multiple products. Changes here update all linked products.</div>
+      {CROSS_PARTS.map(cp=>{
+        const s=stock[cp.id]||{};
+        return(
+          <div key={cp.id} style={{...S.crd,borderColor:acc+"44",borderWidth:2}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+              <span style={{fontWeight:800,fontSize:14,flex:1}}>{cp.n}</span>
+              <span style={{fontSize:10,color:txd}}>×{cp.per}/unit</span>
+            </div>
+            <div style={{fontSize:11,color:acc,marginBottom:8,fontWeight:700}}>🔗 Shared by: {cp.products.map(p=>PRODUCTS[p]?.name).join(" & ")}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+              {cp.c.map(c=>{
+                const key=`${cp.id}_${c}`;const val=s[c]||0;
+                const isEdit=editing===key;
+                if(isEdit)return(
+                  <div key={c} style={{display:"flex",alignItems:"center",gap:3,background:dark?"#252836":"#f0f0ec",borderRadius:8,padding:"4px 6px"}}>
+                    <ColorBadge color={c} size={10}/>
+                    <input type="number" inputMode="numeric" autoFocus value={editVal} onChange={e=>setEditVal(e.target.value)}
+                      onKeyDown={e=>{if(e.key==="Enter")saveStock(cp.id,c);if(e.key==="Escape")setEditing(null)}}
+                      style={{...S.inp,width:56,padding:"4px 6px",fontSize:14,textAlign:"center",fontWeight:800}}/>
+                    <button onClick={()=>saveStock(cp.id,c)} style={{...S.btn(okC),padding:"4px 8px",fontSize:12,minWidth:0}}>✓</button>
+                    <button onClick={()=>setEditing(null)} style={{...S.btn(dark?"#444":"#ccc",tx),padding:"4px 8px",fontSize:12,minWidth:0}}>✕</button>
+                  </div>
+                );
+                return(
+                  <div key={c} onClick={()=>{setEditing(key);setEditVal(String(val))}}
+                    style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer",background:dark?"#252836":"#f0f0ec",borderRadius:8,padding:"6px 12px",border:`1px solid ${cb}`}}>
+                    <ColorBadge color={c} size={10}/>
+                    <span style={{fontWeight:900,fontSize:16,fontVariantNumeric:"tabular-nums",color:val<=0?dnC:tx}}>{val.toLocaleString()}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+      {CROSS_PARTS.length===0&&<div style={{...S.crd,textAlign:"center",color:txd}}>No cross-compatible parts</div>}
+    </div>
+  );
+
+  // STOCK VIEW
+  const StockView=()=>{
+    const prods=stockFilter==="all"?["sprinter","stroller","twilight","tolo","cross"]:[stockFilter];
+    return(
+      <div>
+        <div style={{padding:"10px 12px 4px",fontSize:14,fontWeight:800}}>📦 Stock Overview</div>
+        <div style={{padding:"0 12px 6px",fontSize:12,color:txd}}>Tap any number to edit. All products in one place.</div>
+        <div style={{display:"flex",gap:4,padding:"0 10px 8px",overflowX:"auto"}}>
+          {["all","sprinter","stroller","twilight","tolo"].map(f=>(
+            <button key={f} onClick={()=>setStockFilter(f)}
+              style={{...S.btn(stockFilter===f?acc:"transparent",stockFilter===f?"#fff":txd),padding:"5px 10px",fontSize:11,border:`1px solid ${stockFilter===f?acc:cb}`,whiteSpace:"nowrap"}}>
+              {f==="all"?"All":PRODUCTS[f]?.name}
+            </button>
+          ))}
+        </div>
+        {prods.map(pid=>{
+          const parts=pid==="cross"?CROSS_PARTS:PARTS.filter(p=>p.p===pid);
+          if(parts.length===0)return null;
+          return(
+            <div key={pid}>
+              <div style={{padding:"6px 12px 2px",fontSize:11,fontWeight:800,color:txd,textTransform:"uppercase",letterSpacing:1}}>
+                {pid==="cross"?"🔗 Cross":PRODUCTS[pid]?.icon+" "+PRODUCTS[pid]?.name} ({parts.length})
+              </div>
+              {parts.map(p=><PartRow key={p.id} part={p} showProduct={stockFilter==="all"}/>)}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // LOG VIEW
+  const LogView=()=>{
+    const filtered=logFilter==="all"?logs:logs.filter(l=>l.p===logFilter);
+    return(
+      <div>
+        <div style={{padding:"10px 12px 4px",fontSize:14,fontWeight:800}}>📋 Activity Log</div>
+        <div style={{display:"flex",gap:4,padding:"4px 10px 8px",overflowX:"auto"}}>
+          {["all","sprinter","stroller","twilight","tolo","cross"].map(f=>(
+            <button key={f} onClick={()=>setLogFilter(f)}
+              style={{...S.btn(logFilter===f?acc:"transparent",logFilter===f?"#fff":txd),padding:"5px 10px",fontSize:11,border:`1px solid ${logFilter===f?acc:cb}`,whiteSpace:"nowrap"}}>
+              {f==="all"?"All":f==="cross"?"Cross":PRODUCTS[f]?.name}
+            </button>
+          ))}
+        </div>
+        {filtered.length===0&&<div style={{...S.crd,textAlign:"center",color:txd,padding:20}}>No activity yet</div>}
+        {filtered.slice(0,100).map(l=>(
+          <div key={l.id} style={{...S.crd,padding:"8px 10px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+              <span style={S.tag(l.a==="assemble"?okC:l.a==="adjust"||l.a==="stock_edit"?acc:wnC)}>{l.a}</span>
+              {l.p&&<span style={{fontSize:9,color:txd,fontWeight:700}}>{PRODUCTS[l.p]?.name||l.p}</span>}
+              <span style={{fontSize:12,fontWeight:700,flex:1}}>{l.d}</span>
+              <button onClick={()=>deleteLog(l.id)} style={{background:"none",border:"none",color:dnC+"66",cursor:"pointer",fontSize:12,padding:"2px 4px"}}>🗑️</button>
+            </div>
+            <div style={{fontSize:10,color:txd,marginTop:2}}>{fmtTS(l.ts)}</div>
+          </div>
+        ))}
+        {logs.length>0&&<div style={{padding:"8px 10px"}}><button onClick={clearLogs} style={{...S.btn(dnC),width:"100%",fontSize:12}}>🗑️ Clear All Logs</button></div>}
+      </div>
+    );
+  };
+
+  // CONFIRM VIEW
+  const ConfirmView=()=>{
+    const prodIds=["sprinter","stroller","twilight","tolo"];
+    return(
+      <div>
+        <div style={{padding:"10px 12px 4px",fontSize:14,fontWeight:800}}>✅ Confirm Stock</div>
+        <div style={{padding:"0 12px 6px",fontSize:12,color:txd}}>Tick parts you've physically verified. Green ticks appear on product tabs.</div>
+        <div style={{padding:"4px 10px 8px"}}>
+          <button onClick={resetConfirm} style={{...S.btn(wnC),width:"100%",fontSize:12}}>🔄 Reset All Confirmations</button>
+        </div>
+        {prodIds.map(pid=>{
+          const pp=getProductParts(pid);
+          const confCount=pp.filter(p=>confirmed[p.id]).length;
+          return(
+            <div key={pid}>
+              <div style={{padding:"6px 12px 2px",fontSize:11,fontWeight:800,color:txd,textTransform:"uppercase",letterSpacing:1,display:"flex",justifyContent:"space-between"}}>
+                <span>{PRODUCTS[pid]?.icon} {PRODUCTS[pid]?.name}</span>
+                <span style={{color:confCount===pp.length?okC:wnC}}>{confCount}/{pp.length}</span>
+              </div>
+              {pp.map(p=>(
+                <div key={p.id} onClick={()=>toggleConfirm(p.id)} style={{...S.crd,padding:"8px 10px",display:"flex",alignItems:"center",gap:8,cursor:"pointer",borderColor:confirmed[p.id]?okC+"44":cb}}>
+                  <span style={{fontSize:18}}>{confirmed[p.id]?"✅":"⬜"}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:700,fontSize:13}}>{p.n}</div>
+                    <div style={{fontSize:10,color:txd}}>{p.c.map(c=>CLR[c]?.lb).join(", ")}</div>
+                  </div>
+                  {confirmed[p.id]&&<span style={{fontSize:10,color:okC,fontWeight:700}}>{fmtTS(confirmed[p.id])}</span>}
+                </div>
+              ))}
+            </div>
+          );
+        })}
+        {/* Cross parts */}
+        <div style={{padding:"6px 12px 2px",fontSize:11,fontWeight:800,color:txd,textTransform:"uppercase",letterSpacing:1}}>🔗 Cross-Compatible</div>
+        {CROSS_PARTS.map(cp=>(
+          <div key={cp.id} onClick={()=>toggleConfirm(cp.id)} style={{...S.crd,padding:"8px 10px",display:"flex",alignItems:"center",gap:8,cursor:"pointer",borderColor:confirmed[cp.id]?okC+"44":cb}}>
+            <span style={{fontSize:18}}>{confirmed[cp.id]?"✅":"⬜"}</span>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:13}}>{cp.n}</div>
+              <div style={{fontSize:10,color:txd}}>Shared: {cp.products.map(p=>PRODUCTS[p]?.name).join(" & ")}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // SETTINGS VIEW
+  const SettingsView=()=>(
+    <div>
+      <div style={{padding:"10px 12px 4px",fontSize:14,fontWeight:800}}>⚙️ Settings</div>
+      <div style={S.crd}>
+        <label style={S.lbl}>Cloud Sync</label>
+        <div style={{fontSize:11,color:txd,marginBottom:8}}>Pull latest data from cloud (if partner updated).</div>
+        <button onClick={pullCloud} disabled={syncing} style={{...S.btn(acc),width:"100%"}}>
+          {syncing?"Syncing...":"⬇️ Download from Cloud"}
+        </button>
+        {lastSync&&<div style={{fontSize:10,color:txd,marginTop:6,textAlign:"center"}}>Last sync: {fmtTS(lastSync.getTime())}</div>}
+      </div>
+
+      <div style={S.crd}>
+        <label style={S.lbl}>Export Data</label>
+        <div style={{display:"flex",gap:6}}>
+          <button onClick={doExportJSON} style={{...S.btn(acc),flex:1,fontSize:12}}>📥 JSON Backup</button>
+          <button onClick={doExportCSV} style={{...S.btn(okC),flex:1,fontSize:12}}>📊 CSV Stock</button>
+        </div>
+        <div style={{fontSize:10,color:txd,marginTop:6}}>JSON = full backup (import back). CSV = stock spreadsheet (view in Excel).</div>
+      </div>
+
+      <div style={S.crd}>
+        <label style={S.lbl}>Import Data</label>
+        <label style={{...S.btn(wnC),cursor:"pointer",width:"100%",justifyContent:"center"}}>
+          📤 Import JSON Backup
+          <input type="file" accept=".json" onChange={handleImport} style={{display:"none"}}/>
+        </label>
+      </div>
+
+      <div style={S.crd}>
+        <label style={S.lbl}>Low Stock Threshold</label>
+        <input type="number" inputMode="numeric" value={threshold} onChange={e=>{setThreshold(parseInt(e.target.value)||0);markDirty()}}
+          style={{...S.inp,fontSize:16,fontWeight:700,textAlign:"center"}}/>
+      </div>
+
+      <div style={S.crd}>
+        <label style={S.lbl}>Notes (shared)</label>
+        <textarea rows={6} value={notes} onChange={e=>handleNotes(e.target.value)} placeholder="Shared notes..."
+          style={{...S.inp,minHeight:100,resize:"vertical",lineHeight:1.5}}/>
+      </div>
+
+      <div style={S.crd}>
+        <label style={S.lbl}>Theme</label>
+        <div style={{display:"flex",gap:6}}>
+          <button onClick={()=>setDark(true)} style={{...S.btn(dark?acc:cb,dark?"#fff":tx),flex:1}}>🌙 Dark</button>
+          <button onClick={()=>setDark(false)} style={{...S.btn(!dark?acc:cb,!dark?"#fff":tx),flex:1}}>☀️ Light</button>
+        </div>
+      </div>
+
+      <div style={S.crd}>
+        <label style={S.lbl}>Data Size</label>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{flex:1,height:8,borderRadius:4,background:cb,overflow:"hidden"}}>
+            <div style={{width:`${Math.min(100,parseFloat(dataSize)/100*100)}%`,height:"100%",borderRadius:4,background:parseFloat(dataSize)>80?dnC:parseFloat(dataSize)>50?wnC:okC}}/>
+          </div>
+          <span style={{fontSize:12,fontWeight:700}}>{dataSize} KB / 100 KB</span>
+        </div>
+      </div>
+
+      <div style={{padding:"10px 12px 4px",fontSize:13,fontWeight:800,color:dnC}}>Danger Zone</div>
+      <div style={{...S.crd,borderColor:dnC+"44"}}>
+        <button onClick={doLogout} style={{...S.btn("transparent",tx),border:`1px solid ${cb}`,width:"100%",marginBottom:8}}>🔒 Log Out</button>
+        <button onClick={()=>setShowClear(true)} style={{...S.btn(dnC),width:"100%"}}>🚨 Clear All Data</button>
+      </div>
+    </div>
+  );
+
+  return(
+    <div style={S.app}>
+      {toast&&<div style={S.toast}>{toast.msg}</div>}
+
+      {/* CONFIRM WIPE MODAL */}
+      {showClear&&(
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.85)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{...S.crd,margin:0,maxWidth:340,width:"100%",textAlign:"center",padding:"28px 20px"}}>
+            <div style={{fontSize:44,marginBottom:8}}>⚠️</div>
+            <h2 style={{marginTop:0,color:dnC,fontSize:22,fontWeight:900}}>CLEAR ALL DATA?</h2>
+            <p style={{color:tx,marginBottom:20,fontSize:14,fontWeight:600}}>This permanently deletes ALL stock, logs, and confirmations.</p>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <button onClick={()=>setShowClear(false)} style={{...S.btn(okC),width:"100%",padding:13,fontSize:15}}>✅ Cancel</button>
+              <button onClick={()=>{wipeData();setShowClear(false)}} style={{...S.btn("transparent",dnC),border:`2px solid ${dnC}`,width:"100%",padding:13,fontSize:15}}>🚨 Yes, Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ASSEMBLE CONFIRM MODAL */}
+      {confirmAsm&&(
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.7)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{...S.crd,margin:0,maxWidth:340,width:"100%",textAlign:"center",padding:"24px 20px"}}>
+            <div style={{fontSize:36,marginBottom:6}}>{PRODUCTS[confirmAsm.pid]?.icon}</div>
+            <div style={{fontSize:16,fontWeight:800,marginBottom:4}}>Confirm Assembly</div>
+            <div style={{fontSize:14,color:txd,marginBottom:14}}>
+              Make <strong style={{color:CLR[confirmAsm.color]?.bg}}>{confirmAsm.qty} {CLR[confirmAsm.color]?.lb}</strong> {PRODUCTS[confirmAsm.pid]?.name}{confirmAsm.qty>1?"s":""}?
+              {calcMax(confirmAsm.pid,confirmAsm.color,stock)<confirmAsm.qty&&(
+                <div style={{color:wnC,fontSize:11,marginTop:4,fontWeight:700}}>⚠️ Some parts will hit 0</div>
+              )}
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setConfirmAsm(null)} style={{...S.btn(dark?"#333":"#ddd",tx),flex:1}}>Cancel</button>
+              <button onClick={confirmDoAssemble} style={{...S.btn(okC),flex:1}}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* HEADER */}
+      <div style={{background:dark?"#161822":"#fff",borderBottom:`1px solid ${cb}`,position:"sticky",top:0,zIndex:95}}>
+        <div style={{background:acc+"11",borderBottom:`1px solid ${acc}33`,padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontSize:12,fontWeight:800,color:dirty?wnC:okC}}>
+            {dirty?"⚠️ Unsaved":"✓ Synced"}
+          </span>
+          <button onClick={()=>pushCloud()} disabled={syncing||!dirty}
+            style={{...S.btn(dirty?wnC:acc),padding:"6px 14px",fontSize:12,opacity:(!dirty&&!syncing)?.5:1}}>
+            {syncing?"Saving...":"☁️ Save"}
+          </button>
+        </div>
+        <div style={{padding:"10px 12px 8px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{fontSize:17,fontWeight:900,display:"flex",alignItems:"center",gap:6}}>
+            🏭 Little Star
+          </div>
+          <button onClick={()=>setDark(!dark)} style={{background:"none",border:"none",color:txd,fontSize:18,cursor:"pointer",padding:4}}>{dark?"☀️":"🌙"}</button>
+        </div>
+      </div>
+
+      {/* PRODUCT SUB-NAV */}
+      {mainTab==="products"&&(
+        <div style={S.subNav}>
+          {Object.keys(PRODUCTS).map(pid=>(
+            <button key={pid} onClick={()=>setProdTab(pid)} style={S.subNI(prodTab===pid)}>
+              <span style={{fontSize:14}}>{PRODUCTS[pid].icon}</span>{PRODUCTS[pid].name}
+            </button>
+          ))}
+          <button onClick={()=>setProdTab("cross")} style={S.subNI(prodTab==="cross")}>
+            <span style={{fontSize:14}}>🔗</span>Cross
+          </button>
+        </div>
+      )}
+
+      {/* MAIN CONTENT */}
+      <div style={{paddingBottom:4}}>
+        {mainTab==="products"&&prodTab!=="cross"&&<ProductView pid={prodTab}/>}
+        {mainTab==="products"&&prodTab==="cross"&&<CrossView/>}
+        {mainTab==="stock"&&<StockView/>}
+        {mainTab==="log"&&<LogView/>}
+        {mainTab==="confirm"&&<ConfirmView/>}
+        {mainTab==="settings"&&<SettingsView/>}
+      </div>
+
+      {/* BOTTOM NAV */}
+      <nav style={S.nav}>
+        {[
+          {k:"products",i:"🏭",l:"Products"},
+          {k:"stock",i:"📦",l:"Stock"},
+          {k:"log",i:"📋",l:"Log"},
+          {k:"confirm",i:"✅",l:"Confirm"},
+          {k:"settings",i:"⚙️",l:"Settings"}
+        ].map(n=>(
+          <button key={n.k} onClick={()=>setMainTab(n.k)} style={S.nI(mainTab===n.k)}>
+            <span style={{fontSize:18}}>{n.i}</span>{n.l}
+          </button>
+        ))}
+      </nav>
+    </div>
+  );
+}
+
+const root=ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App/>);
+</script>
+</body>
+</html>
