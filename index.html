@@ -187,34 +187,34 @@ function downloadFile(blob,filename){
   setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url)},150);
 }
 
-function ColorBadge({color,size=16}){
+function ColorBadge({color,size=12}){
   const c=CLR[color]||CLR.universal;
-  return <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",minWidth:size*3.2,height:size*1.8,borderRadius:8,background:c.bg,color:c.fg,fontSize:size*0.9,fontWeight:900,letterSpacing:.5,padding:"0 10px",flexShrink:0}}>{c.lb}</span>;
+  return <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",minWidth:size*3.2,height:size*1.6,borderRadius:4,background:c.bg,color:c.fg,fontSize:size*0.85,fontWeight:900,letterSpacing:.5,padding:"0 6px",flexShrink:0}}>{c.lb}</span>;
 }
 
 function PartRow({part,showProduct,showConfirm,stock,confirmed,editing,editVal,partAdjust,
-  onSetEditing,onSetEditVal,onSetPartAdjust,onSaveStock,onAdjustStock,onToggleConfirm,theme, threshold, itemThresholds}){
+  onSetEditing,onSetEditVal,onSetPartAdjust,onSaveStock,onAdjustStock,onToggleConfirm,theme, threshold, productThresholds}){
   
-  // NOTE: Added 'card' here to fix the blank screen bug
   const{dark,tx,txd,acc,okC,dnC,cb,card,S}=theme;
   
   const s=stock[part.id]||{};
   const isConf=!!confirmed[part.id];
   const isCross=!!part.products;
-  const activeThreshold = itemThresholds[part.id] !== undefined ? itemThresholds[part.id] : threshold;
+  const prodKey = isCross ? "cross" : part.p;
+  const activeThreshold = productThresholds[prodKey] !== undefined ? productThresholds[prodKey] : threshold;
 
   return(
-    <div style={{...S.crd, padding: "16px 14px", border: isConf ? `2px solid ${okC}` : `1px solid ${cb}`, background: isConf ? (dark ? okC+"15" : okC+"08") : card}}>
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
-        {showConfirm&&<span onClick={()=>onToggleConfirm(part.id)} style={{cursor:"pointer",fontSize:28, flexShrink:0}}>{isConf?"✅":"⬜"}</span>}
-        {isConf&&!showConfirm&&<span style={{fontSize:20, flexShrink:0}}>✅</span>}
-        <div style={{flex: 1}}>
-          <div style={{fontWeight:900,fontSize:18, lineHeight:1.2}}>{part.n}</div>
-          <div style={{display:"flex",gap:8,marginTop:6,flexWrap:"wrap"}}>
-            {isCross&&<span style={{fontSize:11,background:acc+"22",color:acc,padding:"3px 8px",borderRadius:8,fontWeight:800}}>CROSS</span>}
-            {showProduct&&<span style={{fontSize:11,background:txd+"33",color:txd,padding:"3px 8px",borderRadius:8,fontWeight:800}}>{part.products?"Cross":PRODUCTS[part.p]?.name||part.p}</span>}
-            <span style={{fontSize:12,color:txd,fontWeight:800}}>×{part.per}/unit</span>
-          </div>
+    <div style={{...S.crd, padding: "8px 10px", border: isConf ? `1.5px solid ${okC}` : `1px solid ${cb}`, background: isConf ? (dark ? okC+"15" : okC+"08") : card}}>
+      
+      {/* COMPACT HEADER: Title and tags on the same line */}
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+        {showConfirm&&<span onClick={()=>onToggleConfirm(part.id)} style={{cursor:"pointer",fontSize:20, flexShrink:0}}>{isConf?"✅":"⬜"}</span>}
+        {isConf&&!showConfirm&&<span style={{fontSize:14, flexShrink:0}}>✅</span>}
+        <div style={{display:"flex", alignItems:"center", flexWrap:"wrap", gap:6, flex:1}}>
+          <span style={{fontWeight:900,fontSize:18, lineHeight:1.1}}>{part.n}</span>
+          {isCross&&<span style={{fontSize:10,background:acc+"22",color:acc,padding:"2px 6px",borderRadius:6,fontWeight:800}}>CROSS</span>}
+          {showProduct&&<span style={{fontSize:10,background:txd+"33",color:txd,padding:"2px 6px",borderRadius:6,fontWeight:800}}>{part.products?"Cross":PRODUCTS[part.p]?.name||part.p}</span>}
+          <span style={{fontSize:11,color:txd,fontWeight:800}}>×{part.per}/u</span>
         </div>
       </div>
 
@@ -225,42 +225,38 @@ function PartRow({part,showProduct,showConfirm,stock,confirmed,editing,editVal,p
         const stockColor = val <= activeThreshold ? dnC : okC;
         
         return(
-          <div key={c} style={{marginBottom:16, padding:"14px 12px", background: dark ? "#1f222e" : "#f8f9fa", borderRadius:12, border:`1px solid ${dark?"#2d3142":"#e9ecef"}`}}>
-            <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14}}>
-              <ColorBadge color={c} size={16}/>
+          <div key={c} style={{marginBottom:6, padding:"6px 8px", background: dark ? "#1f222e" : "#f8f9fa", borderRadius:6, border:`1px solid ${dark?"#2d3142":"#e9ecef"}`}}>
+            <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: isEdit ? 0 : 4}}>
+              <ColorBadge color={c} size={12}/>
               {isEdit?(
-                <div style={{display:"flex", gap:8}}>
+                <div style={{display:"flex", gap:4}}>
                   <input type="number" inputMode="numeric" autoFocus value={editVal}
                     onChange={e=>onSetEditVal(e.target.value)}
                     onKeyDown={e=>{if(e.key==="Enter")onSaveStock(part.id,c);if(e.key==="Escape")onSetEditing(null)}}
-                    style={{...S.inp, width:100, fontSize:20, fontWeight:900, textAlign:"center", height: 44}}/>
-                  <button onClick={()=>onSaveStock(part.id,c)} style={{...S.bSm(okC), padding:"0 16px", fontSize: 16}}>✓</button>
+                    style={{...S.inp, width:70, fontSize:15, fontWeight:900, textAlign:"center", height: 32, padding:"4px"}}/>
+                  <button onClick={()=>onSaveStock(part.id,c)} style={{...S.bSm(okC), padding:"0 12px", fontSize: 14}}>✓</button>
                 </div>
               ):(
                 <span onClick={()=>{onSetEditing(adjKey);onSetEditVal(String(val))}}
-                  style={{fontWeight:900,fontSize:28,color:stockColor,cursor:"pointer",borderBottom:`2px dashed ${txd}`,paddingBottom:2}}>
+                  style={{fontWeight:900,fontSize:20,color:stockColor,cursor:"pointer",borderBottom:`2px dashed ${txd}`,paddingBottom:1}}>
                   {val.toLocaleString()}
                 </span>
               )}
             </div>
 
+            {/* COMPACT CONTROLS: All on one line */}
             {!isEdit&&(
-              <div>
-                <input type="number" inputMode="numeric" placeholder="Qty amount..."
+              <div style={{display:"flex", gap:4, alignItems:"center"}}>
+                <button onClick={()=>onAdjustStock(part.id,c,-1)} style={{...S.btn(dnC), flex:0.7, height:32, fontSize:18, fontWeight:900, padding:0}}>−</button>
+                <input type="number" inputMode="numeric" placeholder="Qty"
                   value={partAdjust[adjKey]||""}
                   onChange={e=>onSetPartAdjust(adjKey,e.target.value)}
-                  style={{...S.inp, width:"100%", height: 48, fontSize:18, textAlign:"center", fontWeight:800, marginBottom:8}}/>
+                  style={{...S.inp, width:55, height: 32, fontSize:13, textAlign:"center", fontWeight:800, padding:"0 2px"}}/>
+                <button onClick={()=>onAdjustStock(part.id,c,1)} style={{...S.btn(okC), flex:0.7, height:32, fontSize:18, fontWeight:900, padding:0}}>+</button>
                 
-                <div style={{display:"flex", gap:8, marginBottom: 14}}>
-                  <button onClick={()=>onSetPartAdjust(adjKey, String((parseInt(partAdjust[adjKey])||0) + 100))} style={{...S.bSm(acc), flex:1, height:40, fontSize:14, fontWeight:900}}>+100</button>
-                  <button onClick={()=>onSetPartAdjust(adjKey, String((parseInt(partAdjust[adjKey])||0) + 200))} style={{...S.bSm(acc), flex:1, height:40, fontSize:14, fontWeight:900}}>+200</button>
-                  <button onClick={()=>onSetPartAdjust(adjKey, String((parseInt(partAdjust[adjKey])||0) + 500))} style={{...S.bSm(acc), flex:1, height:40, fontSize:14, fontWeight:900}}>+500</button>
-                </div>
-
-                <div style={{display:"flex", gap:10}}>
-                  <button onClick={()=>onAdjustStock(part.id,c,-1)} style={{...S.btn(dnC), flex:1, height:52, fontSize:28, fontWeight:900}}>−</button>
-                  <button onClick={()=>onAdjustStock(part.id,c,1)} style={{...S.btn(okC), flex:1, height:52, fontSize:28, fontWeight:900}}>+</button>
-                </div>
+                <button onClick={()=>onSetPartAdjust(adjKey, String((parseInt(partAdjust[adjKey])||0) + 100))} style={{...S.bSm(acc), flex:1, height:32, fontSize:12, fontWeight:800, padding:0}}>+100</button>
+                <button onClick={()=>onSetPartAdjust(adjKey, String((parseInt(partAdjust[adjKey])||0) + 200))} style={{...S.bSm(acc), flex:1, height:32, fontSize:12, fontWeight:800, padding:0}}>+200</button>
+                <button onClick={()=>onSetPartAdjust(adjKey, String((parseInt(partAdjust[adjKey])||0) + 500))} style={{...S.bSm(acc), flex:1, height:32, fontSize:12, fontWeight:800, padding:0}}>+500</button>
               </div>
             )}
           </div>
@@ -286,7 +282,7 @@ function App(){
   const[productNotes,setProductNotes]=useState({});
   
   const[threshold,setThreshold]=useState(600);
-  const[itemThresholds,setItemThresholds]=useState({});
+  const[productThresholds,setProductThresholds]=useState({});
   
   const[loaded,setLoaded]=useState(false);
   const[syncing,setSyncing]=useState(false);
@@ -305,7 +301,6 @@ function App(){
   const[editLogText,setEditLogText]=useState("");
   const[partAdjust,setPartAdjust]=useState({});
   const[searchQuery,setSearchQuery]=useState("");
-  const[showItemThresholds,setShowItemThresholds]=useState(false);
   
   const debounceRef=useRef(null);
   const notesRef=useRef(null);
@@ -320,8 +315,8 @@ function App(){
   },[]);
 
   const serialize=useCallback(()=>({
-    stock,logs:logs.slice(0,2000),confirmed,notes,productNotes,itemThresholds,threshold,updatedAt:Date.now()
-  }),[stock,logs,confirmed,notes,productNotes,itemThresholds,threshold]);
+    stock,logs:logs.slice(0,2000),confirmed,notes,productNotes,productThresholds,threshold,updatedAt:Date.now()
+  }),[stock,logs,confirmed,notes,productNotes,productThresholds,threshold]);
 
   const pullCloud=useCallback(async()=>{
     setSyncing(true);
@@ -349,7 +344,7 @@ function App(){
         setLogs(d.logs||[]);
         setConfirmed(d.confirmed||{});
         if(d.threshold) setThreshold(d.threshold);
-        if(d.itemThresholds) setItemThresholds(d.itemThresholds);
+        if(d.productThresholds) setProductThresholds(d.productThresholds);
         if(d.notes!=null) setNotes(d.notes);
         if(d.productNotes) setProductNotes(d.productNotes);
         
@@ -389,7 +384,7 @@ function App(){
         Object.keys(d.stock||{}).forEach(k=>{if(merged[k]||ALL_PARTS.find(p=>p.id===k))merged[k]={...(merged[k]||{}),...d.stock[k]}});
         setStock(merged);setLogs(d.logs||[]);setConfirmed(d.confirmed||{});
         setThreshold(d.threshold||600);
-        setItemThresholds(d.itemThresholds||{});
+        setProductThresholds(d.productThresholds||{});
         setNotes(d.notes||"");
         setProductNotes(d.productNotes||{});
       }catch(e){}}
@@ -517,7 +512,7 @@ function App(){
           Object.keys(d.stock).forEach(k=>{if(merged[k])merged[k]={...merged[k],...d.stock[k]}});
           setStock(merged);setLogs(d.logs||[]);setConfirmed(d.confirmed||{});
           if(d.threshold)setThreshold(d.threshold);
-          if(d.itemThresholds)setItemThresholds(d.itemThresholds);
+          if(d.productThresholds)setProductThresholds(d.productThresholds);
           if(d.notes!=null)setNotes(d.notes);
           if(d.productNotes)setProductNotes(d.productNotes);
           markDirty();showToast("Imported successfully!");
@@ -526,7 +521,7 @@ function App(){
     };reader.readAsText(file);e.target.value="";
   };
 
-  const wipeData=()=>{setStock(initStock());setLogs([]);setConfirmed({});setNotes("");setProductNotes({});setItemThresholds({});markDirty();showToast("All data wiped","err")};
+  const wipeData=()=>{setStock(initStock());setLogs([]);setConfirmed({});setNotes("");setProductNotes({});setProductThresholds({});markDirty();showToast("All data wiped","err")};
 
   const dataSize=useMemo(()=>{
     const j=JSON.stringify(serialize());return(new Blob([j]).size/1024).toFixed(1);
@@ -541,22 +536,21 @@ function App(){
   const okC="#22c55e";const dnC="#ef4444";const wnC="#f59e0b";
 
   const S={
-    app:{fontFamily:"'Nunito',sans-serif",background:bg,color:tx,minHeight:"100vh",maxWidth:520,margin:"0 auto",paddingBottom:72,fontSize:15,WebkitFontSmoothing:"antialiased"},
-    crd:{background:card,border:`1px solid ${cb}`,borderRadius:12,margin:"6px 10px",padding:"10px 12px"},
-    btn:(b,c="#fff")=>({background:b,color:c,border:"none",borderRadius:10,padding:"10px 16px",fontWeight:800,fontSize:15,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",gap:5}),
-    bSm:(b,c="#fff")=>({background:b,color:c,border:"none",borderRadius:8,padding:"8px 14px",fontWeight:800,fontSize:14,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center"}),
-    inp:{background:dark?"#252836":"#f0f0ec",border:`1.5px solid ${cb}`,borderRadius:10,padding:"10px 12px",color:tx,fontSize:16,fontFamily:"'Nunito',sans-serif",width:"100%",boxSizing:"border-box",outline:"none"},
-    lbl:{fontSize:12,fontWeight:800,color:txd,marginBottom:4,display:"block",textTransform:"uppercase",letterSpacing:.5},
-    tag:(c)=>({display:"inline-block",padding:"3px 10px",borderRadius:12,fontSize:12,fontWeight:800,background:c+"22",color:c}),
-    iBtn:{background:"none",border:"none",color:txd,fontSize:20,cursor:"pointer",padding:"4px 8px",borderRadius:8},
+    app:{fontFamily:"'Nunito',sans-serif",background:bg,color:tx,minHeight:"100vh",maxWidth:520,margin:"0 auto",paddingBottom:70,fontSize:14,WebkitFontSmoothing:"antialiased"},
+    crd:{background:card,border:`1px solid ${cb}`,borderRadius:8,margin:"6px 8px",padding:"8px 10px"},
+    btn:(b,c="#fff")=>({background:b,color:c,border:"none",borderRadius:6,padding:"6px 10px",fontWeight:800,fontSize:14,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",gap:4}),
+    bSm:(b,c="#fff")=>({background:b,color:c,border:"none",borderRadius:4,padding:"4px 8px",fontWeight:800,fontSize:12,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center"}),
+    inp:{background:dark?"#252836":"#f0f0ec",border:`1px solid ${cb}`,borderRadius:6,padding:"6px 8px",color:tx,fontSize:14,fontFamily:"'Nunito',sans-serif",width:"100%",boxSizing:"border-box",outline:"none"},
+    lbl:{fontSize:11,fontWeight:800,color:txd,marginBottom:4,display:"block",textTransform:"uppercase",letterSpacing:.5},
+    tag:(c)=>({display:"inline-block",padding:"2px 6px",borderRadius:8,fontSize:10,fontWeight:800,background:c+"22",color:c}),
+    iBtn:{background:"none",border:"none",color:txd,fontSize:16,cursor:"pointer",padding:"4px 6px",borderRadius:6},
     nav:{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:520,background:dark?"#161822":"#fff",borderTop:`1px solid ${cb}`,display:"flex",zIndex:100},
-    nI:(a)=>({flex:1,padding:"10px 0 12px",textAlign:"center",background:"none",border:"none",color:a?acc:txd,fontSize:11,fontWeight:a?900:700,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4}),
-    toast:{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",background:toast?.type==="err"?dnC:okC,color:"#fff",padding:"12px 24px",borderRadius:12,fontWeight:800,fontSize:14,zIndex:9999,boxShadow:"0 6px 24px rgba(0,0,0,.4)",fontFamily:"'Nunito',sans-serif",maxWidth:"90%",textAlign:"center"},
+    nI:(a)=>({flex:1,padding:"6px 0 8px",textAlign:"center",background:"none",border:"none",color:a?acc:txd,fontSize:10,fontWeight:a?900:700,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}),
+    toast:{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",background:toast?.type==="err"?dnC:okC,color:"#fff",padding:"8px 16px",borderRadius:8,fontWeight:800,fontSize:13,zIndex:9999,boxShadow:"0 4px 16px rgba(0,0,0,.4)",fontFamily:"'Nunito',sans-serif",maxWidth:"90%",textAlign:"center"},
     subNav:{display:"flex",overflowX:"auto",gap:0,background:dark?"#161822cc":"#ffffffcc",backdropFilter:"blur(8px)",borderBottom:`1px solid ${cb}`,position:"sticky",top:0,zIndex:90},
-    subNI:(a)=>({padding:"12px 16px",whiteSpace:"nowrap",background:"none",border:"none",borderBottom:a?`3px solid ${acc}`:"3px solid transparent",color:a?acc:txd,fontSize:14,fontWeight:a?900:700,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"flex",alignItems:"center",gap:6}),
+    subNI:(a)=>({padding:"10px 12px",whiteSpace:"nowrap",background:"none",border:"none",borderBottom:a?`2px solid ${acc}`:"2px solid transparent",color:a?acc:txd,fontSize:13,fontWeight:a?900:700,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"flex",alignItems:"center",gap:4}),
   };
 
-  // NOTE: Added 'card' to theme here so it can be passed down correctly!
   const theme={dark,tx,txd,acc,okC,dnC,cb,card,S};
 
   const handleSetPartAdjust=useCallback((key,val)=>{
@@ -566,9 +560,9 @@ function App(){
   if(!loaded)return(
     <div style={{...S.app,display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh"}}>
       <div style={{textAlign:"center"}}>
-        <div style={{fontSize:48,marginBottom:12}}>🏭</div>
-        <div style={{fontSize:22,fontWeight:900}}>Little Star</div>
-        <div style={{color:txd,marginTop:6,fontSize:15}}>Loading Inventory...</div>
+        <div style={{fontSize:40,marginBottom:10}}>🏭</div>
+        <div style={{fontSize:20,fontWeight:900}}>Little Star</div>
+        <div style={{color:txd,marginTop:4,fontSize:13}}>Loading Inventory...</div>
       </div>
     </div>
   );
@@ -576,7 +570,7 @@ function App(){
   const partRowProps={
     stock,confirmed,editing,editVal,partAdjust,
     onSetEditing:setEditing,onSetEditVal:setEditVal,onSetPartAdjust:handleSetPartAdjust,
-    onSaveStock:saveStock,onAdjustStock:adjustStock,onToggleConfirm:toggleConfirm,theme,threshold,itemThresholds
+    onSaveStock:saveStock,onAdjustStock:adjustStock,onToggleConfirm:toggleConfirm,theme,threshold,productThresholds
   };
 
   const renderProductView=(pid)=>{
@@ -591,46 +585,45 @@ function App(){
     
     return(
       <div>
-        <div style={{...S.crd,border:`2px solid ${acc}44`, padding:"16px 14px"}}>
-          <div style={{fontSize:16,fontWeight:900,marginBottom:12}}>⚙️ Assemble {PRODUCTS[pid]?.name}</div>
-          <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+        <div style={{...S.crd,border:`2px solid ${acc}44`, padding:"10px 10px"}}>
+          <div style={{fontSize:15,fontWeight:900,marginBottom:8}}>⚙️ Assemble {PRODUCTS[pid]?.name}</div>
+          <div style={{display:"flex",gap:4,marginBottom:8,flexWrap:"wrap"}}>
             {aColors.map(c=>(
               <button key={c} onClick={()=>setAsmColor(a=>({...a,[pid]:c}))}
-                style={{...S.btn(selColor===c?CLR[c].bg:"transparent",selColor===c?"#fff":CLR[c].bg),border:`2px solid ${CLR[c].bg}`,padding:"8px 12px",fontSize:14,flex:1,minWidth:70}}>
+                style={{...S.btn(selColor===c?CLR[c].bg:"transparent",selColor===c?"#fff":CLR[c].bg),border:`2px solid ${CLR[c].bg}`,padding:"6px 8px",fontSize:12,flex:1,minWidth:50}}>
                 {CLR[c].lb}
               </button>
             ))}
           </div>
-          <div style={{display:"flex",gap:8,marginBottom:10}}>
-            <input type="number" inputMode="numeric" placeholder="Quantity..." value={asmQty[pid]||""} onChange={e=>setAsmQty(q=>({...q,[pid]:e.target.value}))}
-              style={{...S.inp,flex:1,fontSize:18,height:50,fontWeight:800,textAlign:"center"}}/>
-            <button onClick={()=>doAssemble(pid)} style={{...S.btn(okC),fontSize:16,padding:"0 20px",height:50}}>✅ Make</button>
+          <div style={{display:"flex",gap:6,marginBottom:6}}>
+            <input type="number" inputMode="numeric" placeholder="Qty..." value={asmQty[pid]||""} onChange={e=>setAsmQty(q=>({...q,[pid]:e.target.value}))}
+              style={{...S.inp,flex:1,fontSize:15,height:36,fontWeight:800,textAlign:"center"}}/>
+            <button onClick={()=>doAssemble(pid)} style={{...S.btn(okC),fontSize:14,padding:"0 16px",height:36}}>✅ Make</button>
           </div>
-          <div style={{display:"flex",gap:10,flexWrap:"wrap",justifyContent:"center"}}>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>
             {aColors.map(c=>{
               const mx=calcMax(pid,c,stock);
-              return <span key={c} style={{fontSize:12,fontWeight:800,color:CLR[c].bg}}>Can make {mx} {CLR[c].lb}</span>;
+              return <span key={c} style={{fontSize:11,fontWeight:800,color:CLR[c].bg}}>Can make {mx} {CLR[c].lb}</span>;
             })}
           </div>
         </div>
         
-        {colored.length>0&&<div style={{padding:"12px 14px 4px",fontSize:13,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1}}>Colored Parts ({colored.length})</div>}
+        {colored.length>0&&<div style={{padding:"8px 10px 2px",fontSize:11,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1}}>Colored Parts ({colored.length})</div>}
         {colored.map(p=><PartRow key={p.id} part={p} {...partRowProps}/>)}
         
-        {univ.length>0&&<div style={{padding:"12px 14px 4px",fontSize:13,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1}}>Universal Parts ({univ.length})</div>}
+        {univ.length>0&&<div style={{padding:"8px 10px 2px",fontSize:11,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1}}>Universal Parts ({univ.length})</div>}
         {univ.map(p=><PartRow key={p.id} part={p} {...partRowProps}/>)}
         
-        {pp.length===0&&<div style={{...S.crd,textAlign:"center",color:txd, padding:20, fontSize:16}}>No parts match "{searchQuery}"</div>}
+        {pp.length===0&&<div style={{...S.crd,textAlign:"center",color:txd, padding:12, fontSize:13}}>No parts match "{searchQuery}"</div>}
         
-        {/* 10-line Product Specific Notes */}
-        <div style={{ padding: "16px 14px 20px" }}>
-            <div style={{ fontSize: 13, fontWeight: 900, color: txd, textTransform: "uppercase", marginBottom: 8, letterSpacing:1 }}>📝 {PRODUCTS[pid]?.name} Notes</div>
+        <div style={{ padding: "10px 10px 16px" }}>
+            <div style={{ fontSize: 11, fontWeight: 900, color: txd, textTransform: "uppercase", marginBottom: 4, letterSpacing:1 }}>📝 {PRODUCTS[pid]?.name} Notes</div>
             <textarea
-                rows="10"
+                rows="8"
                 placeholder={`Add any specific notes for ${PRODUCTS[pid]?.name} here...`}
                 value={productNotes[pid] || ""}
                 onChange={e => handleProductNotes(pid, e.target.value)}
-                style={{ ...S.inp, minHeight: 200, resize: "vertical", lineHeight: 1.5, fontSize: 16 }}
+                style={{ ...S.inp, minHeight: 120, resize: "vertical", lineHeight: 1.5, fontSize: 13 }}
             />
         </div>
       </div>
@@ -643,21 +636,20 @@ function App(){
     
     return(
       <div>
-        <div style={{padding:"14px 14px 6px",fontSize:16,fontWeight:900}}>🔗 Cross-Compatible Parts</div>
-        <div style={{padding:"0 14px 10px",fontSize:14,color:txd}}>Shared stock across multiple products.</div>
+        <div style={{padding:"10px 10px 4px",fontSize:15,fontWeight:900}}>🔗 Cross-Compatible Parts</div>
+        <div style={{padding:"0 10px 6px",fontSize:12,color:txd}}>Shared stock across multiple products.</div>
         
         {cp.map(p=><PartRow key={p.id} part={p} {...partRowProps}/>)}
-        {cp.length===0&&<div style={{...S.crd,textAlign:"center",color:txd, padding:20, fontSize:16}}>No parts match "{searchQuery}"</div>}
+        {cp.length===0&&<div style={{...S.crd,textAlign:"center",color:txd, padding:12, fontSize:13}}>No parts match "{searchQuery}"</div>}
         
-        {/* 10-line Cross Parts Notes */}
-        <div style={{ padding: "16px 14px 20px" }}>
-            <div style={{ fontSize: 13, fontWeight: 900, color: txd, textTransform: "uppercase", marginBottom: 8, letterSpacing:1 }}>📝 Cross Parts Notes</div>
+        <div style={{ padding: "10px 10px 16px" }}>
+            <div style={{ fontSize: 11, fontWeight: 900, color: txd, textTransform: "uppercase", marginBottom: 4, letterSpacing:1 }}>📝 Cross Parts Notes</div>
             <textarea
-                rows="10"
+                rows="8"
                 placeholder="Add notes for shared/cross parts here..."
                 value={productNotes["cross"] || ""}
                 onChange={e => handleProductNotes("cross", e.target.value)}
-                style={{ ...S.inp, minHeight: 200, resize: "vertical", lineHeight: 1.5, fontSize: 16 }}
+                style={{ ...S.inp, minHeight: 120, resize: "vertical", lineHeight: 1.5, fontSize: 13 }}
             />
         </div>
       </div>
@@ -668,12 +660,12 @@ function App(){
     const prods=stockFilter==="all"?["sprinter","stroller","twilight","tolo","cross"]:[stockFilter];
     return(
       <div>
-        <div style={{padding:"14px 14px 6px",fontSize:16,fontWeight:900}}>📦 Stock Overview</div>
-        <div style={{padding:"0 14px 10px",fontSize:14,color:txd}}>Tap any number to edit manually.</div>
-        <div style={{display:"flex",gap:6,padding:"0 12px 12px",overflowX:"auto"}}>
+        <div style={{padding:"10px 10px 4px",fontSize:15,fontWeight:900}}>📦 Stock Overview</div>
+        <div style={{padding:"0 10px 6px",fontSize:12,color:txd}}>Tap any number to edit manually.</div>
+        <div style={{display:"flex",gap:4,padding:"0 8px 8px",overflowX:"auto"}}>
           {["all","sprinter","stroller","twilight","tolo"].map(f=>(
             <button key={f} onClick={()=>setStockFilter(f)}
-              style={{...S.btn(stockFilter===f?acc:"transparent",stockFilter===f?"#fff":txd),padding:"8px 14px",fontSize:13,border:`2px solid ${stockFilter===f?acc:cb}`,whiteSpace:"nowrap"}}>
+              style={{...S.btn(stockFilter===f?acc:"transparent",stockFilter===f?"#fff":txd),padding:"4px 10px",fontSize:12,border:`1px solid ${stockFilter===f?acc:cb}`,whiteSpace:"nowrap"}}>
               {f==="all"?"All":PRODUCTS[f]?.name}
             </button>
           ))}
@@ -685,7 +677,7 @@ function App(){
           if(parts.length===0)return null;
           return(
             <div key={pid}>
-              <div style={{padding:"10px 14px 4px",fontSize:13,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1}}>
+              <div style={{padding:"6px 10px 2px",fontSize:11,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1}}>
                 {pid==="cross"?"🔗 Cross":PRODUCTS[pid]?.icon+" "+PRODUCTS[pid]?.name} ({parts.length})
               </div>
               {parts.map(p=><PartRow key={p.id} part={p} showProduct={stockFilter==="all"} {...partRowProps}/>)}
@@ -700,50 +692,50 @@ function App(){
     const filtered=logFilter==="all"?logs:logs.filter(l=>l.p===logFilter);
     return(
       <div>
-        <div style={{padding:"14px 14px 6px",fontSize:16,fontWeight:900}}>📋 Activity Log</div>
-        <div style={{display:"flex",gap:6,padding:"0 12px 12px",overflowX:"auto"}}>
+        <div style={{padding:"10px 10px 4px",fontSize:15,fontWeight:900}}>📋 Activity Log</div>
+        <div style={{display:"flex",gap:4,padding:"0 8px 8px",overflowX:"auto"}}>
           {["all","sprinter","stroller","twilight","tolo","cross"].map(f=>(
             <button key={f} onClick={()=>setLogFilter(f)}
-              style={{...S.btn(logFilter===f?acc:"transparent",logFilter===f?"#fff":txd),padding:"8px 14px",fontSize:13,border:`2px solid ${logFilter===f?acc:cb}`,whiteSpace:"nowrap"}}>
+              style={{...S.btn(logFilter===f?acc:"transparent",logFilter===f?"#fff":txd),padding:"4px 10px",fontSize:12,border:`1px solid ${logFilter===f?acc:cb}`,whiteSpace:"nowrap"}}>
               {f==="all"?"All":f==="cross"?"Cross":PRODUCTS[f]?.name}
             </button>
           ))}
         </div>
-        {filtered.length===0&&<div style={{...S.crd,textAlign:"center",color:txd,padding:30,fontSize:16}}>No activity yet</div>}
+        {filtered.length===0&&<div style={{...S.crd,textAlign:"center",color:txd,padding:16,fontSize:13}}>No activity yet</div>}
         {filtered.slice(0,100).map(l=>(
-          <div key={l.id} style={{...S.crd,padding:"14px", marginBottom:8}}>
-            <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+          <div key={l.id} style={{...S.crd,padding:"8px 10px", marginBottom:4}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:6}}>
               <div style={{flex:1}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:2}}>
                   <span style={S.tag(l.a==="assemble"?okC:l.a==="adjust"||l.a==="stock_edit"?acc:wnC)}>{l.a}</span>
-                  {l.p&&<span style={{fontSize:11,color:txd,fontWeight:800}}>{PRODUCTS[l.p]?.name||l.p}</span>}
+                  {l.p&&<span style={{fontSize:10,color:txd,fontWeight:800}}>{PRODUCTS[l.p]?.name||l.p}</span>}
                 </div>
                 {editLogId===l.id?(
-                  <div style={{marginTop:8}}>
+                  <div style={{marginTop:4}}>
                     <input value={editLogText} onChange={e=>setEditLogText(e.target.value)}
                       onKeyDown={e=>{if(e.key==="Enter")saveLogEdit(l.id);if(e.key==="Escape")setEditLogId(null)}}
-                      autoFocus style={{...S.inp,marginBottom:8,fontSize:16}}/>
-                    <div style={{display:"flex",gap:8}}>
-                      <button onClick={()=>saveLogEdit(l.id)} style={{...S.btn(okC), flex:1}}>Save</button>
-                      <button onClick={()=>setEditLogId(null)} style={{...S.btn(dark?"#444":"#ccc",tx), flex:1}}>Cancel</button>
+                      autoFocus style={{...S.inp,marginBottom:4,fontSize:13}}/>
+                    <div style={{display:"flex",gap:4}}>
+                      <button onClick={()=>saveLogEdit(l.id)} style={{...S.bSm(okC), flex:1}}>Save</button>
+                      <button onClick={()=>setEditLogId(null)} style={{...S.bSm(dark?"#444":"#ccc",tx), flex:1}}>Cancel</button>
                     </div>
                   </div>
                 ):(
-                  <div style={{fontSize:15,fontWeight:800,lineHeight:1.4}}>{l.d}</div>
+                  <div style={{fontSize:13,fontWeight:800,lineHeight:1.3}}>{l.d}</div>
                 )}
-                <div style={{fontSize:12,color:txd,marginTop:6,fontWeight:600}}>
+                <div style={{fontSize:10,color:txd,marginTop:2,fontWeight:600}}>
                   {fmtTS(l.ts)}
-                  {l.editedAt&&<span style={{marginLeft:8,fontStyle:"italic"}}>(edited {fmtTS(l.editedAt)})</span>}
+                  {l.editedAt&&<span style={{marginLeft:6,fontStyle:"italic"}}>(edited {fmtTS(l.editedAt)})</span>}
                 </div>
               </div>
-              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              <div style={{display:"flex",flexDirection:"column",gap:4}}>
                 <button onClick={()=>{setEditLogId(l.id);setEditLogText(l.d)}} style={S.iBtn}>✏️</button>
                 <button onClick={()=>deleteLog(l.id)} style={{...S.iBtn,color:dnC+"aa"}}>🗑️</button>
               </div>
             </div>
           </div>
         ))}
-        {logs.length>0&&<div style={{padding:"12px 14px"}}><button onClick={clearLogs} style={{...S.btn("transparent", dnC), border:`2px solid ${dnC}`, width:"100%",fontSize:15}}>🗑️ Clear All Logs</button></div>}
+        {logs.length>0&&<div style={{padding:"8px 10px"}}><button onClick={clearLogs} style={{...S.btn("transparent", dnC), border:`1px solid ${dnC}`, width:"100%",fontSize:12}}>🗑️ Clear All Logs</button></div>}
       </div>
     );
   };
@@ -752,11 +744,11 @@ function App(){
     const prodIds=["sprinter","stroller","twilight","tolo"];
     return(
       <div>
-        <div style={{padding:"14px 14px 6px",fontSize:16,fontWeight:900}}>✅ Confirm Stock</div>
-        <div style={{padding:"0 14px 10px",fontSize:14,color:txd}}>Tick parts you've physically verified.</div>
-        <div style={{padding:"4px 12px 12px", display:"flex", gap:10}}>
-          <button onClick={resetConfirm} style={{...S.btn("transparent",wnC), border:`2px solid ${wnC}`, flex:1,fontSize:14}}>🔄 Clear All</button>
-          <button onClick={confirmAll} style={{...S.btn(okC),flex:1,fontSize:14}}>✅ Confirm All</button>
+        <div style={{padding:"10px 10px 4px",fontSize:15,fontWeight:900}}>✅ Confirm Stock</div>
+        <div style={{padding:"0 10px 6px",fontSize:12,color:txd}}>Tick parts you've verified.</div>
+        <div style={{padding:"4px 8px 8px", display:"flex", gap:6}}>
+          <button onClick={resetConfirm} style={{...S.btn("transparent",wnC), border:`1px solid ${wnC}`, flex:1,fontSize:12}}>🔄 Clear</button>
+          <button onClick={confirmAll} style={{...S.btn(okC),flex:1,fontSize:12}}>✅ Confirm All</button>
         </div>
         {prodIds.map(pid=>{
           let pp=getProductParts(pid);
@@ -766,18 +758,18 @@ function App(){
           const confCount=pp.filter(p=>confirmed[p.id]).length;
           return(
             <div key={pid}>
-              <div style={{padding:"10px 14px 4px",fontSize:13,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1,display:"flex",justifyContent:"space-between"}}>
+              <div style={{padding:"6px 10px 2px",fontSize:11,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1,display:"flex",justifyContent:"space-between"}}>
                 <span>{PRODUCTS[pid]?.icon} {PRODUCTS[pid]?.name}</span>
                 <span style={{color:confCount===pp.length?okC:wnC}}>{confCount}/{pp.length}</span>
               </div>
               {pp.map(p=>(
-                <div key={p.id} onClick={()=>toggleConfirm(p.id)} style={{...S.crd,padding:"16px 14px",display:"flex",alignItems:"center",gap:14,cursor:"pointer", background: confirmed[p.id] ? okC+"15" : card, border: confirmed[p.id] ? `2px solid ${okC}` : `1px solid ${cb}`}}>
-                  <span style={{fontSize:32}}>{confirmed[p.id]?"✅":"⬜"}</span>
+                <div key={p.id} onClick={()=>toggleConfirm(p.id)} style={{...S.crd,padding:"10px",display:"flex",alignItems:"center",gap:8,cursor:"pointer", background: confirmed[p.id] ? okC+"15" : card, border: confirmed[p.id] ? `1px solid ${okC}` : `1px solid ${cb}`}}>
+                  <span style={{fontSize:20}}>{confirmed[p.id]?"✅":"⬜"}</span>
                   <div style={{flex:1}}>
-                    <div style={{fontWeight:900,fontSize:16}}>{p.n}</div>
-                    <div style={{fontSize:12,color:txd,marginTop:4,fontWeight:700}}>{p.c.map(c=>CLR[c]?.lb).join(", ")}</div>
+                    <div style={{fontWeight:900,fontSize:13}}>{p.n}</div>
+                    <div style={{fontSize:10,color:txd,marginTop:2,fontWeight:700}}>{p.c.map(c=>CLR[c]?.lb).join(", ")}</div>
                   </div>
-                  {confirmed[p.id]&&<span style={{fontSize:11,color:okC,fontWeight:900}}>{fmtTS(confirmed[p.id])}</span>}
+                  {confirmed[p.id]&&<span style={{fontSize:9,color:okC,fontWeight:900}}>{fmtTS(confirmed[p.id])}</span>}
                 </div>
               ))}
             </div>
@@ -790,13 +782,13 @@ function App(){
           if(cp.length===0) return null;
           return (
             <div>
-              <div style={{padding:"10px 14px 4px",fontSize:13,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1}}>🔗 Cross-Compatible</div>
+              <div style={{padding:"6px 10px 2px",fontSize:11,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1}}>🔗 Cross-Compatible</div>
               {cp.map(cp=>(
-                <div key={cp.id} onClick={()=>toggleConfirm(cp.id)} style={{...S.crd,padding:"16px 14px",display:"flex",alignItems:"center",gap:14,cursor:"pointer", background: confirmed[cp.id] ? okC+"15" : card, border: confirmed[cp.id] ? `2px solid ${okC}` : `1px solid ${cb}`}}>
-                  <span style={{fontSize:32}}>{confirmed[cp.id]?"✅":"⬜"}</span>
+                <div key={cp.id} onClick={()=>toggleConfirm(cp.id)} style={{...S.crd,padding:"10px",display:"flex",alignItems:"center",gap:8,cursor:"pointer", background: confirmed[cp.id] ? okC+"15" : card, border: confirmed[cp.id] ? `1px solid ${okC}` : `1px solid ${cb}`}}>
+                  <span style={{fontSize:20}}>{confirmed[cp.id]?"✅":"⬜"}</span>
                   <div style={{flex:1}}>
-                    <div style={{fontWeight:900,fontSize:16}}>{cp.n}</div>
-                    <div style={{fontSize:12,color:txd,marginTop:4,fontWeight:700}}>Shared: {cp.products.map(p=>PRODUCTS[p]?.name).join(" & ")}</div>
+                    <div style={{fontWeight:900,fontSize:13}}>{cp.n}</div>
+                    <div style={{fontSize:10,color:txd,marginTop:2,fontWeight:700}}>Shared: {cp.products.map(p=>PRODUCTS[p]?.name).join(" & ")}</div>
                   </div>
                 </div>
               ))}
@@ -809,27 +801,27 @@ function App(){
 
   const renderSettingsView=()=>(
     <div>
-      <div style={{padding:"14px 14px 6px",fontSize:16,fontWeight:900}}>⚙️ Settings</div>
+      <div style={{padding:"10px 10px 4px",fontSize:15,fontWeight:900}}>⚙️ Settings</div>
       <div style={S.crd}>
         <label style={S.lbl}>Cloud Sync</label>
-        <div style={{fontSize:13,color:txd,marginBottom:10}}>Pull latest data from cloud (if partner updated).</div>
-        <button onClick={pullCloud} disabled={syncing} style={{...S.btn(acc),width:"100%",height:50}}>
+        <div style={{fontSize:11,color:txd,marginBottom:6}}>Pull latest data from cloud (if partner updated).</div>
+        <button onClick={pullCloud} disabled={syncing} style={{...S.btn(acc),width:"100%",height:36}}>
           {syncing?"Syncing...":"⬇️ Download from Cloud"}
         </button>
-        {lastSync&&<div style={{fontSize:12,color:txd,marginTop:8,textAlign:"center",fontWeight:700}}>Last sync: {fmtTS(lastSync.getTime())}</div>}
+        {lastSync&&<div style={{fontSize:10,color:txd,marginTop:4,textAlign:"center",fontWeight:700}}>Last sync: {fmtTS(lastSync.getTime())}</div>}
       </div>
 
       <div style={S.crd}>
         <label style={S.lbl}>Export Data</label>
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={doExportJSON} style={{...S.btn(acc),flex:1,height:48}}>📥 JSON</button>
-          <button onClick={doExportCSV} style={{...S.btn(okC),flex:1,height:48}}>📊 CSV</button>
+        <div style={{display:"flex",gap:6}}>
+          <button onClick={doExportJSON} style={{...S.btn(acc),flex:1,height:36}}>📥 JSON</button>
+          <button onClick={doExportCSV} style={{...S.btn(okC),flex:1,height:36}}>📊 CSV</button>
         </div>
       </div>
 
       <div style={S.crd}>
         <label style={S.lbl}>Import Data</label>
-        <label style={{...S.btn(wnC),cursor:"pointer",width:"100%",height:50,justifyContent:"center"}}>
+        <label style={{...S.btn(wnC),cursor:"pointer",width:"100%",height:36,justifyContent:"center"}}>
           📤 Import JSON Backup
           <input type="file" accept=".json" onChange={handleImport} style={{display:"none"}}/>
         </label>
@@ -837,73 +829,65 @@ function App(){
 
       <div style={S.crd}>
         <label style={S.lbl}>Global Low Stock Threshold</label>
-        <div style={{fontSize:13,color:txd,marginBottom:8}}>Items at or below this number show in red.</div>
+        <div style={{fontSize:11,color:txd,marginBottom:4}}>Items at or below this number show in red.</div>
         <input type="number" inputMode="numeric" value={threshold} onChange={e=>{setThreshold(parseInt(e.target.value)||0);markDirty()}}
-          style={{...S.inp,fontSize:20,fontWeight:900,textAlign:"center",height:50}}/>
+          style={{...S.inp,fontSize:16,fontWeight:900,textAlign:"center",height:40}}/>
       </div>
       
-      {/* Individual Thresholds Section */}
+      {/* Product-Specific Thresholds Section */}
       <div style={S.crd}>
-        <label style={S.lbl}>Individual Part Thresholds</label>
-        <div style={{fontSize:13,color:txd,marginBottom:10}}>Set custom red-line limits for specific items.</div>
-        <button onClick={() => setShowItemThresholds(!showItemThresholds)} style={{...S.btn(dark?"#2d3142":"#e9ecef", tx), width: "100%", height:50}}>
-             {showItemThresholds ? "Hide Individual Settings" : "⚙️ Configure Items"}
-        </button>
+        <label style={S.lbl}>Product Thresholds</label>
+        <div style={{fontSize:11,color:txd,marginBottom:6}}>Set custom limits for specific categories.</div>
         
-        {showItemThresholds && (
-           <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10, maxHeight: 500, overflowY: "auto", padding:"4px" }}>
-              {ALL_PARTS.map(p => (
-                 <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 10, borderBottom: `1px solid ${cb}` }}>
-                    <div style={{flex: 1, paddingRight: 10}}>
-                       <div style={{fontSize: 14, fontWeight: 800}}>{p.n}</div>
-                       <div style={{fontSize: 11, color: txd, fontWeight: 700}}>{PRODUCTS[p.p]?.name || "Cross"}</div>
-                    </div>
-                    <input type="number" placeholder={`Def: ${threshold}`}
-                       value={itemThresholds[p.id] !== undefined ? itemThresholds[p.id] : ""}
-                       onChange={e => {
-                          const val = e.target.value === "" ? undefined : parseInt(e.target.value);
-                          setItemThresholds(prev => {
-                             const next = {...prev};
-                             if (val === undefined) delete next[p.id]; else next[p.id] = val;
-                             return next;
-                          });
-                          markDirty();
-                       }}
-                       style={{...S.inp, width: 100, fontSize: 16, fontWeight: 800, textAlign: "center"}}
-                    />
-                 </div>
-              ))}
-           </div>
-        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {["sprinter", "stroller", "twilight", "tolo", "cross"].map(prod => (
+                <div key={prod} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: dark?"#1f222e":"#f8f9fa", padding: "6px 8px", borderRadius: 6 }}>
+                   <div style={{fontSize: 13, fontWeight: 800}}>{prod==="cross" ? "🔗 Cross Parts" : `${PRODUCTS[prod]?.icon} ${PRODUCTS[prod]?.name}`}</div>
+                   <input type="number" placeholder={`Def: ${threshold}`}
+                      value={productThresholds[prod] !== undefined ? productThresholds[prod] : ""}
+                      onChange={e => {
+                         const val = e.target.value === "" ? undefined : parseInt(e.target.value);
+                         setProductThresholds(prev => {
+                            const next = {...prev};
+                            if (val === undefined) delete next[prod]; else next[prod] = val;
+                            return next;
+                         });
+                         markDirty();
+                      }}
+                      style={{...S.inp, width: 70, fontSize: 13, fontWeight: 800, textAlign: "center", height: 28, padding: "2px"}}
+                   />
+                </div>
+            ))}
+        </div>
       </div>
 
       <div style={S.crd}>
         <label style={S.lbl}>General Notes</label>
         <textarea rows={6} value={notes} onChange={e=>handleNotes(e.target.value)} placeholder="Shared general notes..."
-          style={{...S.inp,minHeight:140,resize:"vertical",lineHeight:1.5}}/>
+          style={{...S.inp,minHeight:80,resize:"vertical",lineHeight:1.4}}/>
       </div>
 
       <div style={S.crd}>
         <label style={S.lbl}>Theme</label>
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>setDark(true)} style={{...S.btn(dark?acc:cb,dark?"#fff":tx),flex:1,height:48}}>🌙 Dark</button>
-          <button onClick={()=>setDark(false)} style={{...S.btn(!dark?acc:cb,!dark?"#fff":tx),flex:1,height:48}}>☀️ Light</button>
+        <div style={{display:"flex",gap:6}}>
+          <button onClick={()=>setDark(true)} style={{...S.btn(dark?acc:cb,dark?"#fff":tx),flex:1,height:36}}>🌙 Dark</button>
+          <button onClick={()=>setDark(false)} style={{...S.btn(!dark?acc:cb,!dark?"#fff":tx),flex:1,height:36}}>☀️ Light</button>
         </div>
       </div>
 
       <div style={S.crd}>
         <label style={S.lbl}>Data Size</label>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{flex:1,height:12,borderRadius:6,background:cb,overflow:"hidden"}}>
-            <div style={{width:`${Math.min(100,parseFloat(dataSize)/100*100)}%`,height:"100%",borderRadius:6,background:parseFloat(dataSize)>80?dnC:parseFloat(dataSize)>50?wnC:okC}}/>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <div style={{flex:1,height:8,borderRadius:4,background:cb,overflow:"hidden"}}>
+            <div style={{width:`${Math.min(100,parseFloat(dataSize)/100*100)}%`,height:"100%",borderRadius:4,background:parseFloat(dataSize)>80?dnC:parseFloat(dataSize)>50?wnC:okC}}/>
           </div>
-          <span style={{fontSize:14,fontWeight:800}}>{dataSize} KB / 100 KB</span>
+          <span style={{fontSize:11,fontWeight:800}}>{dataSize} KB / 100 KB</span>
         </div>
       </div>
 
-      <div style={{padding:"14px 14px 4px",fontSize:15,fontWeight:900,color:dnC}}>Danger Zone</div>
+      <div style={{padding:"10px 12px 2px",fontSize:12,fontWeight:900,color:dnC}}>Danger Zone</div>
       <div style={{...S.crd,borderColor:dnC+"44"}}>
-        <button onClick={()=>setShowClear(true)} style={{...S.btn(dnC),width:"100%",height:50}}>🚨 Clear All Data</button>
+        <button onClick={()=>setShowClear(true)} style={{...S.btn(dnC),width:"100%",height:40}}>🚨 Clear All Data</button>
       </div>
     </div>
   );
@@ -914,13 +898,13 @@ function App(){
 
       {showClear&&(
         <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.85)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-          <div style={{...S.crd,margin:0,maxWidth:360,width:"100%",textAlign:"center",padding:"32px 24px"}}>
-            <div style={{fontSize:54,marginBottom:12}}>⚠️</div>
-            <h2 style={{marginTop:0,color:dnC,fontSize:26,fontWeight:900}}>CLEAR ALL DATA?</h2>
-            <p style={{color:tx,marginBottom:24,fontSize:16,fontWeight:700}}>This permanently deletes ALL stock, logs, notes, and confirmations.</p>
-            <div style={{display:"flex",flexDirection:"column",gap:12}}>
-              <button onClick={()=>setShowClear(false)} style={{...S.btn(okC),width:"100%",height:54,fontSize:18}}>✅ Cancel</button>
-              <button onClick={()=>{wipeData();setShowClear(false)}} style={{...S.btn("transparent",dnC),border:`2px solid ${dnC}`,width:"100%",height:54,fontSize:18}}>🚨 Yes, Delete Everything</button>
+          <div style={{...S.crd,margin:0,maxWidth:280,width:"100%",textAlign:"center",padding:"20px"}}>
+            <div style={{fontSize:40,marginBottom:6}}>⚠️</div>
+            <h2 style={{marginTop:0,color:dnC,fontSize:20,fontWeight:900}}>CLEAR ALL DATA?</h2>
+            <p style={{color:tx,marginBottom:16,fontSize:13,fontWeight:700}}>This permanently deletes ALL stock, logs, notes, and confirmations.</p>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              <button onClick={()=>setShowClear(false)} style={{...S.btn(okC),width:"100%",height:40,fontSize:14}}>✅ Cancel</button>
+              <button onClick={()=>{wipeData();setShowClear(false)}} style={{...S.btn("transparent",dnC),border:`2px solid ${dnC}`,width:"100%",height:40,fontSize:14}}>🚨 Yes, Delete</button>
             </div>
           </div>
         </div>
@@ -928,41 +912,41 @@ function App(){
 
       {confirmAsm&&(
         <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.8)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-          <div style={{...S.crd,margin:0,maxWidth:360,width:"100%",textAlign:"center",padding:"30px 24px"}}>
-            <div style={{fontSize:48,marginBottom:10}}>{PRODUCTS[confirmAsm.pid]?.icon}</div>
-            <div style={{fontSize:20,fontWeight:900,marginBottom:6}}>Confirm Assembly</div>
-            <div style={{fontSize:16,color:txd,marginBottom:20}}>
+          <div style={{...S.crd,margin:0,maxWidth:280,width:"100%",textAlign:"center",padding:"20px"}}>
+            <div style={{fontSize:36,marginBottom:6}}>{PRODUCTS[confirmAsm.pid]?.icon}</div>
+            <div style={{fontSize:16,fontWeight:900,marginBottom:4}}>Confirm Assembly</div>
+            <div style={{fontSize:13,color:txd,marginBottom:14}}>
               Make <strong style={{color:CLR[confirmAsm.color]?.bg}}>{confirmAsm.qty} {CLR[confirmAsm.color]?.lb}</strong> {PRODUCTS[confirmAsm.pid]?.name}{confirmAsm.qty>1?"s":""}?
               {confirmAsm.color==="red"&&confirmAsm.pid==="stroller"&&(
-                <div style={{fontSize:13,marginTop:6,fontWeight:800,color:CLR.darkblue.bg}}>Uses Red + D.Blue parts</div>
+                <div style={{fontSize:11,marginTop:4,fontWeight:800,color:CLR.darkblue.bg}}>Uses Red + D.Blue parts</div>
               )}
               {calcMax(confirmAsm.pid,confirmAsm.color,stock)<confirmAsm.qty&&(
-                <div style={{color:wnC,fontSize:13,marginTop:6,fontWeight:900}}>⚠️ Some parts will drop below 0</div>
+                <div style={{color:wnC,fontSize:11,marginTop:4,fontWeight:900}}>⚠️ Some parts will drop below 0</div>
               )}
             </div>
-            <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>setConfirmAsm(null)} style={{...S.btn(dark?"#333":"#ddd",tx),flex:1,height:50,fontSize:16}}>Cancel</button>
-              <button onClick={confirmDoAssemble} style={{...S.btn(okC),flex:1,height:50,fontSize:16}}>Confirm</button>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setConfirmAsm(null)} style={{...S.btn(dark?"#333":"#ddd",tx),flex:1,height:36,fontSize:13}}>Cancel</button>
+              <button onClick={confirmDoAssemble} style={{...S.btn(okC),flex:1,height:36,fontSize:13}}>Confirm</button>
             </div>
           </div>
         </div>
       )}
 
       <div style={{background:dark?"#161822":"#fff",borderBottom:`1px solid ${cb}`,position:"sticky",top:0,zIndex:95}}>
-        <div style={{background:acc+"15",borderBottom:`1px solid ${acc}44`,padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span style={{fontSize:13,fontWeight:900,color:dirty?wnC:okC, letterSpacing:1}}>
+        <div style={{background:acc+"15",borderBottom:`1px solid ${acc}44`,padding:"6px 10px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontSize:11,fontWeight:900,color:dirty?wnC:okC, letterSpacing:1}}>
             {dirty?"⚠️ UNSAVED CHANGES":"✓ ALL SYNCED"}
           </span>
           <button onClick={()=>pushCloud()} disabled={syncing||!dirty}
-            style={{...S.bSm(dirty?wnC:acc),padding:"8px 16px",fontSize:13,opacity:(!dirty&&!syncing)?.5:1}}>
+            style={{...S.bSm(dirty?wnC:acc),padding:"4px 10px",fontSize:11,opacity:(!dirty&&!syncing)?.5:1}}>
             {syncing?"Saving...":"☁️ Save to Cloud"}
           </button>
         </div>
-        <div style={{padding:"14px 16px 12px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div style={{fontSize:20,fontWeight:900,display:"flex",alignItems:"center",gap:8}}>
+        <div style={{padding:"8px 12px 6px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{fontSize:16,fontWeight:900,display:"flex",alignItems:"center",gap:6}}>
             🏭 Little Star
           </div>
-          <button onClick={()=>setDark(!dark)} style={{background:"none",border:"none",color:txd,fontSize:22,cursor:"pointer",padding:4}}>{dark?"☀️":"🌙"}</button>
+          <button onClick={()=>setDark(!dark)} style={{background:"none",border:"none",color:txd,fontSize:18,cursor:"pointer",padding:2}}>{dark?"☀️":"🌙"}</button>
         </div>
       </div>
 
@@ -970,20 +954,20 @@ function App(){
         <div style={S.subNav}>
           {Object.keys(PRODUCTS).map(pid=>(
             <button key={pid} onClick={()=>{setProdTab(pid); setSearchQuery("")}} style={S.subNI(prodTab===pid)}>
-              <span style={{fontSize:16}}>{PRODUCTS[pid].icon}</span>{PRODUCTS[pid].name}
+              <span style={{fontSize:13}}>{PRODUCTS[pid].icon}</span>{PRODUCTS[pid].name}
             </button>
           ))}
           <button onClick={()=>{setProdTab("cross"); setSearchQuery("")}} style={S.subNI(prodTab==="cross")}>
-            <span style={{fontSize:16}}>🔗</span>Cross
+            <span style={{fontSize:13}}>🔗</span>Cross
           </button>
         </div>
       )}
 
       {/* Global Search Bar */}
       {["products", "stock", "confirm"].includes(mainTab) && (
-        <div style={{padding: "12px 14px 0"}}>
+        <div style={{padding: "8px 10px 0"}}>
            <input type="text" placeholder="🔍 Search parts..." value={searchQuery} onChange={(e)=>setSearchQuery(e.target.value)} 
-             style={{...S.inp, height: 50, fontSize: 16, fontWeight: 700, background: dark ? "#1a1d27" : "#fff", border: `2px solid ${acc}66`}} />
+             style={{...S.inp, height: 36, fontSize: 13, fontWeight: 700, background: dark ? "#1a1d27" : "#fff", border: `1.5px solid ${acc}66`}} />
         </div>
       )}
 
@@ -1005,7 +989,7 @@ function App(){
           {k:"settings",i:"⚙️",l:"Settings"}
         ].map(n=>(
           <button key={n.k} onClick={()=>{setMainTab(n.k); setSearchQuery("")}} style={S.nI(mainTab===n.k)}>
-            <span style={{fontSize:22, marginBottom:4}}>{n.i}</span>{n.l}
+            <span style={{fontSize:16, marginBottom:2}}>{n.i}</span>{n.l}
           </button>
         ))}
       </nav>
