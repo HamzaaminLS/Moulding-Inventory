@@ -367,19 +367,44 @@ function App(){
   },[serialize,showToast]);
 
   const autoSyncRef=useRef(null);
+  const dirtyRef=useRef(false);
+  const serializeRef=useRef(serialize);
+  serializeRef.current=serialize;
 
   const markDirty=useCallback(()=>{
     setDirty(true);
-    clearTimeout(debounceRef.current);
-    debounceRef.current=setTimeout(()=>{
-      const data=serialize();
-      localStorage.setItem(STORE_KEY,JSON.stringify(data));
-    },150);
+    dirtyRef.current=true;
+    // Save to localStorage immediately (no delay)
+    const data=serialize();
+    localStorage.setItem(STORE_KEY,JSON.stringify(data));
+    // Push to Firebase with tiny debounce to batch rapid changes
     clearTimeout(autoSyncRef.current);
     autoSyncRef.current=setTimeout(()=>{
       pushCloud();
-    },500);
+      dirtyRef.current=false;
+    },300);
   },[serialize,pushCloud]);
+
+  // Save when user switches tabs, minimizes, or closes Safari
+  useEffect(()=>{
+    const emergencySave=()=>{
+      if(dirtyRef.current){
+        const data=serializeRef.current();
+        localStorage.setItem(STORE_KEY,JSON.stringify(data));
+        // fetch with keepalive survives page close and supports PUT
+        try{fetch(`${FB_URL}${FB_PATH}.json`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(data),keepalive:true})}catch(e){}
+      }
+    };
+    const onVisChange=()=>{if(document.visibilityState==="hidden")emergencySave()};
+    document.addEventListener("visibilitychange",onVisChange);
+    window.addEventListener("pagehide",emergencySave);
+    window.addEventListener("beforeunload",emergencySave);
+    return()=>{
+      document.removeEventListener("visibilitychange",onVisChange);
+      window.removeEventListener("pagehide",emergencySave);
+      window.removeEventListener("beforeunload",emergencySave);
+    };
+  },[]);
 
   useEffect(()=>{
     const init=async()=>{
