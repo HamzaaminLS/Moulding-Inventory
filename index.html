@@ -30,8 +30,8 @@
 <script type="text/babel">
 const{useState,useEffect,useCallback,useRef,useMemo}=React;
 
-const BIN_ID="69b5043fc3097a1dd523b73b";
-const API_KEY="$2a$10$I3uAdHs5eeSRBspEzXS4Vu9Q5TJMyMC/Y/xLf72UmV5.pSZgsRTeG";
+const FB_URL="https://moulding-c25b1-default-rtdb.asia-southeast1.firebasedatabase.app";
+const FB_PATH="/inventory/main";
 const STORE_KEY="littlestar-inv-v3";
 const THEME_KEY="littlestar-theme";
 
@@ -321,10 +321,10 @@ function App(){
   const pullCloud=useCallback(async()=>{
     setSyncing(true);
     try{
-      const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`,{headers:{"X-Master-Key":API_KEY}});
+      const r=await fetch(`${FB_URL}${FB_PATH}.json`);
       const j=await r.json();
-      if(j.record&&j.record.stock){
-        const d=j.record;
+      if(j&&j.stock){
+        const d=j;
         
         const localRaw = localStorage.getItem(STORE_KEY);
         let localD = null;
@@ -359,12 +359,14 @@ function App(){
     setSyncing(true);
     try{
       const payload=data||serialize();
-      const r=await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":API_KEY},body:JSON.stringify(payload)});
-      if(r.ok){localStorage.setItem(STORE_KEY,JSON.stringify(payload));setLastSync(new Date());setDirty(false);showToast("Saved to Cloud!")}
-      else showToast("Cloud save failed","err");
-    }catch(e){showToast("Network error (Saved Offline)","wnC")}
+      const r=await fetch(`${FB_URL}${FB_PATH}.json`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+      if(r.ok){localStorage.setItem(STORE_KEY,JSON.stringify(payload));setLastSync(new Date());setDirty(false);showToast("☁️ Auto-synced!")}
+      else{const errText=await r.text();showToast(`Save failed: ${r.status} - ${errText.slice(0,80)}`,"err");console.error("Firebase error:",r.status,errText)}
+    }catch(e){showToast(`Offline: ${e.message}`,"wnC");console.error("Push error:",e)}
     setSyncing(false);
   },[serialize,showToast]);
+
+  const autoSyncRef=useRef(null);
 
   const markDirty=useCallback(()=>{
     setDirty(true);
@@ -372,8 +374,12 @@ function App(){
     debounceRef.current=setTimeout(()=>{
       const data=serialize();
       localStorage.setItem(STORE_KEY,JSON.stringify(data));
+    },150);
+    clearTimeout(autoSyncRef.current);
+    autoSyncRef.current=setTimeout(()=>{
+      pushCloud();
     },500);
-  },[serialize]);
+  },[serialize,pushCloud]);
 
   useEffect(()=>{
     const init=async()=>{
@@ -879,9 +885,9 @@ function App(){
         <label style={S.lbl}>Data Size</label>
         <div style={{display:"flex",alignItems:"center",gap:6}}>
           <div style={{flex:1,height:8,borderRadius:4,background:cb,overflow:"hidden"}}>
-            <div style={{width:`${Math.min(100,parseFloat(dataSize)/100*100)}%`,height:"100%",borderRadius:4,background:parseFloat(dataSize)>80?dnC:parseFloat(dataSize)>50?wnC:okC}}/>
+            <div style={{width:`${Math.min(100,parseFloat(dataSize)/1048576*100)}%`,height:"100%",borderRadius:4,background:parseFloat(dataSize)>800000?dnC:parseFloat(dataSize)>500000?wnC:okC}}/>
           </div>
-          <span style={{fontSize:11,fontWeight:800}}>{dataSize} KB / 100 KB</span>
+          <span style={{fontSize:11,fontWeight:800}}>{dataSize} KB / 1 GB</span>
         </div>
       </div>
 
@@ -934,12 +940,12 @@ function App(){
 
       <div style={{background:dark?"#161822":"#fff",borderBottom:`1px solid ${cb}`,position:"sticky",top:0,zIndex:95}}>
         <div style={{background:acc+"15",borderBottom:`1px solid ${acc}44`,padding:"6px 10px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span style={{fontSize:11,fontWeight:900,color:dirty?wnC:okC, letterSpacing:1}}>
-            {dirty?"⚠️ UNSAVED CHANGES":"✓ ALL SYNCED"}
+          <span style={{fontSize:11,fontWeight:900,color:syncing?acc:dirty?wnC:okC, letterSpacing:1}}>
+            {syncing?"🔄 SYNCING...":dirty?"⏳ AUTO-SAVING...":"✓ ALL SYNCED"}
           </span>
           <button onClick={()=>pushCloud()} disabled={syncing||!dirty}
             style={{...S.bSm(dirty?wnC:acc),padding:"4px 10px",fontSize:11,opacity:(!dirty&&!syncing)?.5:1}}>
-            {syncing?"Saving...":"☁️ Save to Cloud"}
+            {syncing?"Syncing...":"☁️ Force Sync"}
           </button>
         </div>
         <div style={{padding:"8px 12px 6px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
