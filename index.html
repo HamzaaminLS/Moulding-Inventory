@@ -396,15 +396,22 @@ function App(){
     setSyncing(false);
   },[serialize,showToast]);
 
-  const markDirty=useCallback(()=>{
+  const markDirty=useCallback((overrides={})=>{
     setDirty(true);
     dirtyRef.current=true;
-    // Save to localStorage immediately
-    const data=serialize();
+    const data={
+      stock: overrides.stock||stock,
+      logs: (overrides.logs||logs).slice(0,2000),
+      confirmed: overrides.confirmed||confirmed,
+      notes: overrides.notes!==undefined?overrides.notes:notes,
+      productNotes: overrides.productNotes||productNotes,
+      productThresholds: overrides.productThresholds||productThresholds,
+      threshold: overrides.threshold!==undefined?overrides.threshold:threshold,
+      updatedAt:Date.now()
+    };
     localStorage.setItem(STORE_KEY,JSON.stringify(data));
-    // Push to Firebase IMMEDIATELY — no delay
     pushCloud(data);
-  },[serialize,pushCloud]);
+  },[stock,logs,confirmed,notes,productNotes,productThresholds,threshold,pushCloud]);
 
   // Periodic backup sync every 30s as safety net
   useEffect(()=>{
@@ -517,7 +524,7 @@ function App(){
     const pName=PRODUCTS[pid]?.name||pid;
     const entry=mkLog("assemble",`${qty} ${CLR[color]?.lb||color} ${pName}${qty>1?"s":""}`,pid);
     const nl=[entry,...logs].slice(0,2000);
-    setStock(ns);setLogs(nl);setAsmQty(q=>({...q,[pid]:""}));setConfirmAsm(null);markDirty();
+    setStock(ns);setLogs(nl);setAsmQty(q=>({...q,[pid]:""}));setConfirmAsm(null);markDirty({stock:ns,logs:nl});
     showToast(`Assembled ${qty} ${CLR[color]?.lb} ${pName}!`);
   };
 
@@ -529,7 +536,7 @@ function App(){
     const part=ALL_PARTS.find(p=>p.id===partId);
     const entry=mkLog("stock_edit",`${part?.n||partId} [${CLR[color]?.lb||color}]: ${old} \u2192 ${nv}`,part?.p||"cross");
     const nl=[entry,...logs].slice(0,2000);
-    setStock(ns);setLogs(nl);setEditing(null);setEditVal("");markDirty();showToast("Stock updated");
+    setStock(ns);setLogs(nl);setEditing(null);setEditVal("");markDirty({stock:ns,logs:nl});showToast("Stock updated");
   };
 
   const adjustStock=(pid,ck,delta)=>{
@@ -543,42 +550,43 @@ function App(){
     const part=ALL_PARTS.find(p=>p.id===pid);
     const entry=mkLog("adjust",`${part?.n||pid} [${CLR[ck]?.lb||ck}]: ${old} \u2192 ${nv} (${nv>old?"+":""}${nv-old})`,part?.p||"cross");
     const nl=[entry,...logs].slice(0,2000);
-    setStock(ns);setLogs(nl);markDirty();
+    setStock(ns);setLogs(nl);markDirty({stock:ns,logs:nl});
     setPartAdjust(prev=>({...prev,[`${pid}_${ck}`]:""}));
   };
 
   const toggleConfirm=(partId)=>{
     const nc={...confirmed};
     if(nc[partId])delete nc[partId];else nc[partId]=Date.now();
-    setConfirmed(nc);markDirty();
+    setConfirmed(nc);markDirty({confirmed:nc});
   };
   
-  const resetConfirm=()=>{setConfirmed({});markDirty();showToast("Confirmations reset")};
+  const resetConfirm=()=>{setConfirmed({});markDirty({confirmed:{}});showToast("Confirmations reset")};
   
   const confirmAll=()=>{
     const nc={};
     ALL_PARTS.forEach(p=>nc[p.id]=Date.now());
     setConfirmed(nc);
-    markDirty();
+    markDirty({confirmed:nc});
     showToast("All parts confirmed");
   };
 
-  const deleteLog=(lid)=>{setLogs(logs.filter(l=>l.id!==lid));markDirty()};
-  const clearLogs=()=>{setLogs([]);markDirty();showToast("Logs cleared")};
+  const deleteLog=(lid)=>{const nl=logs.filter(l=>l.id!==lid);setLogs(nl);markDirty({logs:nl})};
+  const clearLogs=()=>{setLogs([]);markDirty({logs:[]});showToast("Logs cleared")};
   const saveLogEdit=(lid)=>{
     const nl=logs.map(l=>l.id===lid?{...l,d:editLogText,editedAt:Date.now()}:l);
-    setLogs(nl);setEditLogId(null);markDirty();showToast("Log updated");
+    setLogs(nl);setEditLogId(null);markDirty({logs:nl});showToast("Log updated");
   };
 
   const handleNotes=(val)=>{
     setNotes(val);clearTimeout(notesRef.current);
-    notesRef.current=setTimeout(()=>markDirty(),800);
+    notesRef.current=setTimeout(()=>markDirty({notes:val}),800);
   };
   
   const handleProductNotes=(pid, val)=>{
-    setProductNotes(prev => ({...prev, [pid]: val}));
+    const newPN={...productNotes,[pid]:val};
+    setProductNotes(newPN);
     clearTimeout(productNotesRef.current[pid]);
-    productNotesRef.current[pid] = setTimeout(() => markDirty(), 800);
+    productNotesRef.current[pid] = setTimeout(() => markDirty({productNotes:newPN}), 800);
   };
 
   const doExportJSON=()=>{
@@ -618,13 +626,13 @@ function App(){
           if(d.productThresholds)setProductThresholds(d.productThresholds);
           if(d.notes!=null)setNotes(d.notes);
           if(d.productNotes)setProductNotes(d.productNotes);
-          markDirty();showToast("Imported successfully!");
+          markDirty({stock:merged,logs:d.logs||[],confirmed:d.confirmed||{},threshold:d.threshold||threshold,productThresholds:d.productThresholds||productThresholds,notes:d.notes!=null?d.notes:notes,productNotes:d.productNotes||productNotes});showToast("Imported successfully!");
         }else showToast("Invalid format","err");
       }catch(err){showToast("Error reading file","err")}
     };reader.readAsText(file);e.target.value="";
   };
 
-  const wipeData=()=>{setStock(initStock());setLogs([]);setConfirmed({});setNotes("");setProductNotes({});setProductThresholds({});markDirty();showToast("All data wiped","err")};
+  const wipeData=()=>{const es=initStock();setStock(es);setLogs([]);setConfirmed({});setNotes("");setProductNotes({});setProductThresholds({});markDirty({stock:es,logs:[],confirmed:{},notes:"",productNotes:{},productThresholds:{}});showToast("All data wiped","err")};
 
   const dataSize=useMemo(()=>{
     const j=JSON.stringify(serialize());return(new Blob([j]).size/1024).toFixed(1);
@@ -957,7 +965,7 @@ function App(){
       <div style={S.crd}>
         <label style={S.lbl}>Global Low Stock Threshold</label>
         <div style={{fontSize:11,color:txd,marginBottom:5}}>Items at or below this number show in red.</div>
-        <input type="number" inputMode="numeric" value={threshold} onChange={e=>{setThreshold(parseInt(e.target.value)||0);markDirty()}}
+        <input type="number" inputMode="numeric" value={threshold} onChange={e=>{const v=parseInt(e.target.value)||0;setThreshold(v);markDirty({threshold:v})}}
           style={{...S.inp,fontSize:16,fontWeight:900,textAlign:"center",height:42}}/>
       </div>
       
@@ -973,12 +981,10 @@ function App(){
                       value={productThresholds[prod] !== undefined ? productThresholds[prod] : ""}
                       onChange={e => {
                          const val = e.target.value === "" ? undefined : parseInt(e.target.value);
-                         setProductThresholds(prev => {
-                            const next = {...prev};
-                            if (val === undefined) delete next[prod]; else next[prod] = val;
-                            return next;
-                         });
-                         markDirty();
+                         const next = {...productThresholds};
+                         if (val === undefined) delete next[prod]; else next[prod] = val;
+                         setProductThresholds(next);
+                         markDirty({productThresholds:next});
                       }}
                       style={{...S.inp, width: 72, fontSize: 13, fontWeight: 800, textAlign: "center", height: 30, padding: "2px"}}
                    />
