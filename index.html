@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Little Star Inventory</title>
+  <title>Little Star Inventory v6</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Little Star">
@@ -46,7 +46,7 @@ const FB_PATH="/inventory/main";
 const STORE_KEY="littlestar-inv-v4";
 const THEME_KEY="littlestar-theme";
 
-// ═══ COLORS (Sparkle colors removed) ═══
+// ═══ ALL COLORS FROM EXCEL ═══
 const DEF_COLORS={
   pink:{bg:"#f472b6",fg:"#fff",lb:"L.Pink",gw:"rgba(244,114,182,.3)"},
   blue:{bg:"#60a5fa",fg:"#fff",lb:"L.Blue",gw:"rgba(96,165,250,.3)"},
@@ -62,10 +62,10 @@ const DEF_COLORS={
   universal:{bg:"#9ca3af",fg:"#fff",lb:"Univ.",gw:"rgba(156,163,175,.2)"}
 };
 
-// ═══ PRODUCTS (no Sparkle) ═══
+// ═══ PRODUCTS ═══
 const DEF_PRODUCTS={sprinter:{name:"Sprinter",icon:"🏍️"},stroller:{name:"Stroller",icon:"👶"},twilight:{name:"Twilight",icon:"🌙"},tolo:{name:"Tolo",icon:"🚗"}};
 
-// ═══ PARTS (no Sparkle) ═══
+// ═══ PARTS ═══
 const DEF_PARTS=[
   // --- Sprinter ---
   {id:"sp_body",n:"Body",p:"sprinter",c:["pink","blue"],per:1},
@@ -139,7 +139,7 @@ const DEF_PARTS=[
   {id:"to_hlinner",n:"HL Inner / Music Piece / Baja Cap",p:"tolo",c:["pink","blue"],per:1}
 ];
 
-// Cross parts: pipe shared between stroller & tolo only
+// Cross parts: pipe shared between stroller and tolo
 const DEF_CROSS=[{id:"cx_pipe",n:"Stroller & Tolo Pipe",c:["black"],per:1,products:["stroller","tolo"]}];
 
 const DEF_ASM={stroller:{red:{darkblue:"darkblue"}}};
@@ -149,13 +149,13 @@ function genId(){return Date.now().toString(36)+Math.random().toString(36).slice
 function fmtTS(ts){const d=new Date(ts),dd=String(d.getDate()).padStart(2,"0"),mm=String(d.getMonth()+1).padStart(2,"0"),yy=String(d.getFullYear()).slice(2);let h=d.getHours();const ap=h>=12?"PM":"AM";h=h%12||12;return`${dd}/${mm}/${yy} ${h}:${String(d.getMinutes()).padStart(2,"0")} ${ap}`}
 function dlFile(b,f){const u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=f;document.body.appendChild(a);a.click();setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(u)},150)}
 
-function CBadge({color,CLR,size=11}){
+function CBadge({color,CLR,size=12}){
   const c=CLR[color]||CLR.universal||{bg:"#888",fg:"#fff",lb:color};
-  return <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",minWidth:size*3,height:size*1.6,borderRadius:4,background:c.bg,color:c.fg,fontSize:size*.85,fontWeight:900,letterSpacing:.4,padding:"0 5px",flexShrink:0,boxShadow:`0 1px 4px ${c.gw||"transparent"}`}}>{c.lb}</span>;
+  return <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",minWidth:size*3.2,height:size*1.7,borderRadius:5,background:c.bg,color:c.fg,fontSize:size*.85,fontWeight:900,letterSpacing:.5,padding:"0 7px",flexShrink:0,boxShadow:`0 2px 8px ${c.gw||"transparent"}`}}>{c.lb}</span>;
 }
 function SDot({syncing,dirty,okC,wnC,acc}){
   const c=syncing?acc:dirty?wnC:okC;
-  return <span style={{display:"inline-block",width:7,height:7,borderRadius:"50%",background:c,marginRight:5,flexShrink:0,animation:syncing?"syncPulse .8s ease infinite":dirty?"pulse 1.5s ease infinite":"none",boxShadow:`0 0 6px ${c}`}}/>;
+  return <span style={{display:"inline-block",width:7,height:7,borderRadius:"50%",background:c,marginRight:6,flexShrink:0,animation:syncing?"syncPulse .8s ease infinite":dirty?"pulse 1.5s ease infinite":"none",boxShadow:`0 0 6px ${c}`}}/>;
 }
 
 function PartRow({part,showProduct,showConfirm,stock,confirmed,editing,editVal,partAdjust,onSetEditing,onSetEditVal,onSetPartAdjust,onSaveStock,onAdjustStock,onToggleConfirm,theme,threshold,productThresholds,CLR,PRODUCTS}){
@@ -164,46 +164,46 @@ function PartRow({part,showProduct,showConfirm,stock,confirmed,editing,editVal,p
   const prodKey=isCross?"cross":part.p;
   const at=productThresholds[prodKey]!==undefined?productThresholds[prodKey]:threshold;
   return(
-    <div style={{...S.crd,padding:"7px 9px",border:isConf?`1.5px solid ${okC}`:`1px solid ${cb}`,background:isConf?(dark?okC+"15":okC+"08"):card}}>
-      <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:4}}>
-        {showConfirm&&<span onClick={()=>onToggleConfirm(part.id)} style={{cursor:"pointer",fontSize:18,flexShrink:0}}>{isConf?"✅":"⬜"}</span>}
-        {isConf&&!showConfirm&&<span style={{fontSize:12,flexShrink:0}}>✅</span>}
-        <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:4,flex:1}}>
-          <span style={{fontWeight:900,fontSize:14,lineHeight:1.1}}>{part.n}</span>
-          {isCross&&<span style={{fontSize:9,background:acc+"22",color:acc,padding:"1px 5px",borderRadius:5,fontWeight:800}}>CROSS</span>}
-          {showProduct&&<span style={{fontSize:9,background:txd+"33",color:txd,padding:"1px 5px",borderRadius:5,fontWeight:800}}>{part.products?"Cross":PRODUCTS[part.p]?.name||part.p}</span>}
-          <span style={{fontSize:10,color:txd,fontWeight:800}}>×{part.per}/u</span>
+    <div style={{...S.crd,padding:"8px 10px",border:isConf?`1.5px solid ${okC}`:`1px solid ${cb}`,background:isConf?(dark?okC+"15":okC+"08"):card}}>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+        {showConfirm&&<span onClick={()=>onToggleConfirm(part.id)} style={{cursor:"pointer",fontSize:20,flexShrink:0}}>{isConf?"✅":"⬜"}</span>}
+        {isConf&&!showConfirm&&<span style={{fontSize:14,flexShrink:0}}>✅</span>}
+        <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:6,flex:1}}>
+          <span style={{fontWeight:900,fontSize:18,lineHeight:1.1}}>{part.n}</span>
+          {isCross&&<span style={{fontSize:10,background:acc+"22",color:acc,padding:"2px 6px",borderRadius:6,fontWeight:800}}>CROSS</span>}
+          {showProduct&&<span style={{fontSize:10,background:txd+"33",color:txd,padding:"2px 6px",borderRadius:6,fontWeight:800}}>{part.products?"Cross":PRODUCTS[part.p]?.name||part.p}</span>}
+          <span style={{fontSize:11,color:txd,fontWeight:800}}>×{part.per}/u</span>
         </div>
       </div>
       {part.c.map(c=>{
         const val=s[c]||0,adjKey=`${part.id}_${c}`,isEdit=editing===adjKey,sc=val<=at?dnC:okC;
         return(
-          <div key={c} style={{marginBottom:4,padding:"5px 7px",background:dark?"#1f222e":"#f8f9fa",borderRadius:6,border:`1px solid ${dark?"#2d3142":"#e9ecef"}`}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:isEdit?0:3}}>
-              <CBadge color={c} CLR={CLR} size={11}/>
+          <div key={c} style={{marginBottom:6,padding:"6px 8px",background:dark?"#1f222e":"#f8f9fa",borderRadius:6,border:`1px solid ${dark?"#2d3142":"#e9ecef"}`}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:isEdit?0:4}}>
+              <CBadge color={c} CLR={CLR} size={12}/>
               {isEdit?(
-                <div style={{display:"flex",gap:3}}>
+                <div style={{display:"flex",gap:4}}>
                   <input type="number" inputMode="numeric" autoFocus value={editVal} onChange={e=>onSetEditVal(e.target.value)}
                     onKeyDown={e=>{if(e.key==="Enter")onSaveStock(part.id,c);if(e.key==="Escape")onSetEditing(null)}}
-                    style={{...S.inp,width:65,fontSize:14,fontWeight:900,textAlign:"center",height:30,padding:"3px"}}/>
-                  <button onClick={()=>onSaveStock(part.id,c)} style={{...S.bSm(okC),padding:"0 10px",fontSize:13}}>✓</button>
+                    style={{...S.inp,width:70,fontSize:15,fontWeight:900,textAlign:"center",height:32,padding:"4px"}}/>
+                  <button onClick={()=>onSaveStock(part.id,c)} style={{...S.bSm(okC),padding:"0 12px",fontSize:14}}>✓</button>
                 </div>
               ):(
                 <span onClick={()=>{onSetEditing(adjKey);onSetEditVal(String(val))}}
-                  style={{fontWeight:900,fontSize:18,color:sc,cursor:"pointer",borderBottom:`2px dashed ${txd}`,paddingBottom:1}}>
+                  style={{fontWeight:900,fontSize:20,color:sc,cursor:"pointer",borderBottom:`2px dashed ${txd}`,paddingBottom:1}}>
                   {val.toLocaleString()}
                 </span>
               )}
             </div>
             {!isEdit&&(
-              <div style={{display:"flex",gap:3,alignItems:"center"}}>
-                <button onClick={()=>onAdjustStock(part.id,c,-1)} style={{...S.btn(dnC),flex:.6,height:30,fontSize:16,fontWeight:900,padding:0}}>−</button>
+              <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                <button onClick={()=>onAdjustStock(part.id,c,-1)} style={{...S.btn(dnC),flex:.7,height:32,fontSize:18,fontWeight:900,padding:0}}>−</button>
                 <input type="number" inputMode="numeric" placeholder="Qty" value={partAdjust[adjKey]||""} onChange={e=>onSetPartAdjust(adjKey,e.target.value)}
-                  style={{...S.inp,width:48,height:30,fontSize:12,textAlign:"center",fontWeight:800,padding:"0 2px"}}/>
-                <button onClick={()=>onAdjustStock(part.id,c,1)} style={{...S.btn(okC),flex:.6,height:30,fontSize:16,fontWeight:900,padding:0}}>+</button>
-                <button onClick={()=>onSetPartAdjust(adjKey,String((parseInt(partAdjust[adjKey])||0)+100))} style={{...S.bSm(acc),flex:1,height:30,fontSize:11,fontWeight:800,padding:0}}>+100</button>
-                <button onClick={()=>onSetPartAdjust(adjKey,String((parseInt(partAdjust[adjKey])||0)+200))} style={{...S.bSm(acc),flex:1,height:30,fontSize:11,fontWeight:800,padding:0}}>+200</button>
-                <button onClick={()=>onSetPartAdjust(adjKey,String((parseInt(partAdjust[adjKey])||0)+500))} style={{...S.bSm(acc),flex:1,height:30,fontSize:11,fontWeight:800,padding:0}}>+500</button>
+                  style={{...S.inp,width:55,height:32,fontSize:13,textAlign:"center",fontWeight:800,padding:"0 2px"}}/>
+                <button onClick={()=>onAdjustStock(part.id,c,1)} style={{...S.btn(okC),flex:.7,height:32,fontSize:18,fontWeight:900,padding:0}}>+</button>
+                <button onClick={()=>onSetPartAdjust(adjKey,String((parseInt(partAdjust[adjKey])||0)+100))} style={{...S.bSm(acc),flex:1,height:32,fontSize:12,fontWeight:800,padding:0}}>+100</button>
+                <button onClick={()=>onSetPartAdjust(adjKey,String((parseInt(partAdjust[adjKey])||0)+200))} style={{...S.bSm(acc),flex:1,height:32,fontSize:12,fontWeight:800,padding:0}}>+200</button>
+                <button onClick={()=>onSetPartAdjust(adjKey,String((parseInt(partAdjust[adjKey])||0)+500))} style={{...S.bSm(acc),flex:1,height:32,fontSize:12,fontWeight:800,padding:0}}>+500</button>
               </div>
             )}
           </div>
@@ -215,11 +215,11 @@ function PartRow({part,showProduct,showConfirm,stock,confirmed,editing,editVal,p
 
 function Modal({show,onClose,title,children,theme}){
   if(!show)return null;const{txd,S}=theme;
-  return(<div className="modal-bg" style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.75)",zIndex:200,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"40px 10px 20px",backdropFilter:"blur(6px)",overflowY:"auto"}} onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
-    <div className="modal-card" style={{...S.crd,margin:0,maxWidth:440,width:"100%",padding:"14px 12px",borderRadius:14,maxHeight:"85vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <div style={{fontSize:15,fontWeight:900}}>{title}</div>
-        <button onClick={onClose} style={{background:"none",border:"none",color:txd,fontSize:18,cursor:"pointer",padding:"2px 6px"}}>✕</button>
+  return(<div className="modal-bg" style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.75)",zIndex:200,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"40px 12px 20px",backdropFilter:"blur(6px)",overflowY:"auto"}} onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
+    <div className="modal-card" style={{...S.crd,margin:0,maxWidth:440,width:"100%",padding:"18px 16px",borderRadius:16,maxHeight:"85vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+        <div style={{fontSize:17,fontWeight:900}}>{title}</div>
+        <button onClick={onClose} style={{background:"none",border:"none",color:txd,fontSize:20,cursor:"pointer",padding:"2px 6px"}}>✕</button>
       </div>{children}
     </div>
   </div>);
@@ -231,34 +231,34 @@ function MgrColors({CLR,onAdd,onEdit,onDel,theme,toast}){
   const[ek,setEk]=useState(null);const[el,setEl]=useState("");const[eh,setEh]=useState("");
   const[cd,setCd]=useState(null);
   return(<div>
-    <div style={{fontSize:11,fontWeight:800,color:txd,marginBottom:6}}>Add/edit/delete colors for your parts.</div>
-    {Object.entries(CLR).map(([k,v])=>(<div key={k} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 8px",marginBottom:3,background:dark?"#0e1019":"#f5f6f9",borderRadius:7,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
-      <div style={{width:24,height:24,borderRadius:5,background:v.bg,flexShrink:0}}/>
-      {ek===k?(<div style={{flex:1,display:"flex",gap:3,alignItems:"center",flexWrap:"wrap"}}>
-        <input value={el} onChange={e=>setEl(e.target.value)} style={{...S.inp,flex:1,minWidth:50,height:28,fontSize:11,padding:"2px 5px"}} placeholder="Label"/>
-        <input type="color" value={eh} onChange={e=>setEh(e.target.value)} style={{width:28,height:28,border:"none",padding:0,cursor:"pointer",borderRadius:4}}/>
-        <button onClick={()=>{onEdit(k,el,eh);setEk(null)}} style={{...S.bSm(okC),height:28}}>✓</button>
-        <button onClick={()=>setEk(null)} style={{...S.bSm(dark?"#333":"#ddd",tx),height:28}}>✕</button>
-      </div>):cd===k?(<div style={{flex:1,display:"flex",gap:3,alignItems:"center"}}>
-        <span style={{fontSize:11,fontWeight:800,color:dnC}}>Delete {v.lb}?</span><div style={{flex:1}}/>
-        <button onClick={()=>{onDel(k);setCd(null)}} style={{...S.bSm(dnC),height:26}}>Yes</button>
-        <button onClick={()=>setCd(null)} style={{...S.bSm(dark?"#333":"#ddd",tx),height:26}}>No</button>
+    <div style={{fontSize:12,fontWeight:800,color:txd,marginBottom:8}}>Add/edit/delete colors for your parts.</div>
+    {Object.entries(CLR).map(([k,v])=>(<div key={k} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",marginBottom:4,background:dark?"#0e1019":"#f5f6f9",borderRadius:8,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
+      <div style={{width:28,height:28,borderRadius:6,background:v.bg,flexShrink:0}}/>
+      {ek===k?(<div style={{flex:1,display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>
+        <input value={el} onChange={e=>setEl(e.target.value)} style={{...S.inp,flex:1,minWidth:60,height:30,fontSize:12,padding:"2px 6px"}} placeholder="Label"/>
+        <input type="color" value={eh} onChange={e=>setEh(e.target.value)} style={{width:30,height:30,border:"none",padding:0,cursor:"pointer",borderRadius:4}}/>
+        <button onClick={()=>{onEdit(k,el,eh);setEk(null)}} style={{...S.bSm(okC),height:30}}>✓</button>
+        <button onClick={()=>setEk(null)} style={{...S.bSm(dark?"#333":"#ddd",tx),height:30}}>✕</button>
+      </div>):cd===k?(<div style={{flex:1,display:"flex",gap:4,alignItems:"center"}}>
+        <span style={{fontSize:12,fontWeight:800,color:dnC}}>Delete {v.lb}?</span><div style={{flex:1}}/>
+        <button onClick={()=>{onDel(k);setCd(null)}} style={{...S.bSm(dnC),height:28}}>Yes</button>
+        <button onClick={()=>setCd(null)} style={{...S.bSm(dark?"#333":"#ddd",tx),height:28}}>No</button>
       </div>):(<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div><div style={{fontWeight:900,fontSize:12}}>{v.lb}</div><div style={{fontSize:9,color:txd}}>{k} · {v.bg}</div></div>
-        <div style={{display:"flex",gap:3}}>
+        <div><div style={{fontWeight:900,fontSize:13}}>{v.lb}</div><div style={{fontSize:10,color:txd}}>{k} · {v.bg}</div></div>
+        <div style={{display:"flex",gap:4}}>
           <button onClick={()=>{setEk(k);setEl(v.lb);setEh(v.bg)}} style={S.iBtn}>✏️</button>
           {k!=="universal"&&<button onClick={()=>setCd(k)} style={{...S.iBtn,color:dnC+"aa"}}>🗑️</button>}
         </div>
       </div>)}
     </div>))}
-    <div style={{marginTop:10,padding:"10px",background:dark?"#0e1019":"#f5f6f9",borderRadius:8,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
-      <div style={{fontSize:10,fontWeight:900,color:acc,marginBottom:5}}>+ ADD COLOR</div>
-      <div style={{display:"flex",gap:3,marginBottom:5}}>
-        <input placeholder="Key (green)" value={nk} onChange={e=>setNk(e.target.value.toLowerCase().replace(/[^a-z0-9]/g,""))} style={{...S.inp,flex:1,height:32,fontSize:11}}/>
-        <input placeholder="Label" value={nl} onChange={e=>setNl(e.target.value)} style={{...S.inp,flex:1,height:32,fontSize:11}}/>
-        <input type="color" value={nh} onChange={e=>setNh(e.target.value)} style={{width:32,height:32,border:"none",padding:0,cursor:"pointer",borderRadius:5}}/>
+    <div style={{marginTop:12,padding:"12px",background:dark?"#0e1019":"#f5f6f9",borderRadius:10,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
+      <div style={{fontSize:11,fontWeight:900,color:acc,marginBottom:6}}>+ ADD COLOR</div>
+      <div style={{display:"flex",gap:4,marginBottom:6}}>
+        <input placeholder="Key (green)" value={nk} onChange={e=>setNk(e.target.value.toLowerCase().replace(/[^a-z0-9]/g,""))} style={{...S.inp,flex:1,height:34,fontSize:12}}/>
+        <input placeholder="Label" value={nl} onChange={e=>setNl(e.target.value)} style={{...S.inp,flex:1,height:34,fontSize:12}}/>
+        <input type="color" value={nh} onChange={e=>setNh(e.target.value)} style={{width:34,height:34,border:"none",padding:0,cursor:"pointer",borderRadius:6}}/>
       </div>
-      <button onClick={()=>{if(!nk||!nl){toast("Fill both","err");return}if(CLR[nk]){toast("Exists","err");return}onAdd(nk,nl,nh);setNk("");setNl("")}} disabled={!nk||!nl} style={{...S.btn(okC),width:"100%",height:34,borderRadius:7,opacity:(!nk||!nl)?.5:1}}>Add Color</button>
+      <button onClick={()=>{if(!nk||!nl){toast("Fill both","err");return}if(CLR[nk]){toast("Exists","err");return}onAdd(nk,nl,nh);setNk("");setNl("")}} disabled={!nk||!nl} style={{...S.btn(okC),width:"100%",height:36,borderRadius:8,opacity:(!nk||!nl)?.5:1}}>Add Color</button>
     </div>
   </div>);
 }
@@ -269,33 +269,33 @@ function MgrProducts({PRODUCTS,PARTS,onAdd,onEdit,onDel,theme,toast}){
   const[ek,setEk]=useState(null);const[en,setEn]=useState("");const[ei,setEi]=useState("");
   const[cd,setCd]=useState(null);
   return(<div>
-    <div style={{fontSize:11,fontWeight:800,color:txd,marginBottom:6}}>Each product = a tab. Add new products here.</div>
-    {Object.entries(PRODUCTS).map(([k,v])=>(<div key={k} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 8px",marginBottom:3,background:dark?"#0e1019":"#f5f6f9",borderRadius:7,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
-      <span style={{fontSize:20}}>{v.icon}</span>
-      {ek===k?(<div style={{flex:1,display:"flex",gap:3,alignItems:"center",flexWrap:"wrap"}}>
-        <input value={en} onChange={e=>setEn(e.target.value)} style={{...S.inp,flex:1,minWidth:50,height:28,fontSize:11,padding:"2px 5px"}}/>
-        <input value={ei} onChange={e=>setEi(e.target.value)} style={{...S.inp,width:36,height:28,fontSize:15,textAlign:"center",padding:"2px"}}/>
-        <button onClick={()=>{onEdit(k,en,ei);setEk(null)}} style={{...S.bSm(okC),height:28}}>✓</button>
-        <button onClick={()=>setEk(null)} style={{...S.bSm(dark?"#333":"#ddd",tx),height:28}}>✕</button>
-      </div>):cd===k?(<div style={{flex:1,display:"flex",gap:3,alignItems:"center"}}>
-        <span style={{fontSize:11,fontWeight:800,color:dnC}}>Delete {v.name} + parts?</span><div style={{flex:1}}/>
-        <button onClick={()=>{onDel(k);setCd(null)}} style={{...S.bSm(dnC),height:26}}>Yes</button>
-        <button onClick={()=>setCd(null)} style={{...S.bSm(dark?"#333":"#ddd",tx),height:26}}>No</button>
+    <div style={{fontSize:12,fontWeight:800,color:txd,marginBottom:8}}>Each product = a tab. Add new products here.</div>
+    {Object.entries(PRODUCTS).map(([k,v])=>(<div key={k} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",marginBottom:4,background:dark?"#0e1019":"#f5f6f9",borderRadius:8,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
+      <span style={{fontSize:22}}>{v.icon}</span>
+      {ek===k?(<div style={{flex:1,display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>
+        <input value={en} onChange={e=>setEn(e.target.value)} style={{...S.inp,flex:1,minWidth:60,height:30,fontSize:12,padding:"2px 6px"}}/>
+        <input value={ei} onChange={e=>setEi(e.target.value)} style={{...S.inp,width:40,height:30,fontSize:16,textAlign:"center",padding:"2px"}}/>
+        <button onClick={()=>{onEdit(k,en,ei);setEk(null)}} style={{...S.bSm(okC),height:30}}>✓</button>
+        <button onClick={()=>setEk(null)} style={{...S.bSm(dark?"#333":"#ddd",tx),height:30}}>✕</button>
+      </div>):cd===k?(<div style={{flex:1,display:"flex",gap:4,alignItems:"center"}}>
+        <span style={{fontSize:12,fontWeight:800,color:dnC}}>Delete {v.name} + parts?</span><div style={{flex:1}}/>
+        <button onClick={()=>{onDel(k);setCd(null)}} style={{...S.bSm(dnC),height:28}}>Yes</button>
+        <button onClick={()=>setCd(null)} style={{...S.bSm(dark?"#333":"#ddd",tx),height:28}}>No</button>
       </div>):(<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div><div style={{fontWeight:900,fontSize:13}}>{v.name}</div><div style={{fontSize:10,color:txd}}>{PARTS.filter(p=>p.p===k).length} parts</div></div>
-        <div style={{display:"flex",gap:3}}>
+        <div><div style={{fontWeight:900,fontSize:14}}>{v.name}</div><div style={{fontSize:10,color:txd}}>{PARTS.filter(p=>p.p===k).length} parts</div></div>
+        <div style={{display:"flex",gap:4}}>
           <button onClick={()=>{setEk(k);setEn(v.name);setEi(v.icon)}} style={S.iBtn}>✏️</button>
           <button onClick={()=>setCd(k)} style={{...S.iBtn,color:dnC+"aa"}}>🗑️</button>
         </div>
       </div>)}
     </div>))}
-    <div style={{marginTop:10,padding:"10px",background:dark?"#0e1019":"#f5f6f9",borderRadius:8,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
-      <div style={{fontSize:10,fontWeight:900,color:acc,marginBottom:5}}>+ ADD PRODUCT</div>
-      <div style={{display:"flex",gap:3,marginBottom:5}}>
-        <input placeholder="Name" value={nn} onChange={e=>setNn(e.target.value)} style={{...S.inp,flex:1,height:32,fontSize:11}}/>
-        <input placeholder="Icon" value={ni} onChange={e=>setNi(e.target.value)} style={{...S.inp,width:44,height:32,fontSize:15,textAlign:"center",padding:"2px"}}/>
+    <div style={{marginTop:12,padding:"12px",background:dark?"#0e1019":"#f5f6f9",borderRadius:10,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
+      <div style={{fontSize:11,fontWeight:900,color:acc,marginBottom:6}}>+ ADD PRODUCT</div>
+      <div style={{display:"flex",gap:4,marginBottom:6}}>
+        <input placeholder="Name (Sparkle)" value={nn} onChange={e=>setNn(e.target.value)} style={{...S.inp,flex:1,height:34,fontSize:12}}/>
+        <input placeholder="Icon" value={ni} onChange={e=>setNi(e.target.value)} style={{...S.inp,width:50,height:34,fontSize:16,textAlign:"center",padding:"2px"}}/>
       </div>
-      <button onClick={()=>{if(!nn){toast("Enter name","err");return}const key=nn.toLowerCase().replace(/[^a-z0-9]/g,"");if(PRODUCTS[key]){toast("Exists","err");return}onAdd(key,nn,ni);setNn("");setNi("📦")}} disabled={!nn} style={{...S.btn(okC),width:"100%",height:34,borderRadius:7,opacity:!nn?.5:1}}>Add Product</button>
+      <button onClick={()=>{if(!nn){toast("Enter name","err");return}const key=nn.toLowerCase().replace(/[^a-z0-9]/g,"");if(PRODUCTS[key]){toast("Exists","err");return}onAdd(key,nn,ni);setNn("");setNi("📦")}} disabled={!nn} style={{...S.btn(okC),width:"100%",height:36,borderRadius:8,opacity:!nn?.5:1}}>Add Product</button>
     </div>
   </div>);
 }
@@ -306,37 +306,37 @@ function MgrParts({PRODUCTS,PARTS,CLR,onAdd,onEdit,onDel,theme,toast}){
   const[nn,setNn]=useState("");const[nc,setNc]=useState([]);const[np,setNp]=useState(1);
   const[eid,setEid]=useState(null);const[en,setEn]=useState("");const[ec,setEc]=useState([]);const[ep,setEp]=useState(1);
   const[cd,setCd]=useState(null);
-  const ck=Object.keys(CLR).filter(c=>c!=="universal");const tg=(a,s,c)=>a.includes(c)?s(a.filter(x=>x!==c)):s([...a,c]);
+  const ck=Object.keys(CLR);const tg=(a,s,c)=>a.includes(c)?s(a.filter(x=>x!==c)):s([...a,c]);
   const pp=PARTS.filter(p=>p.p===sp);
   useEffect(()=>{if(!PRODUCTS[sp]){const k=Object.keys(PRODUCTS)[0];if(k)setSp(k)}},[PRODUCTS,sp]);
   return(<div>
-    <div style={{fontSize:11,fontWeight:800,color:txd,marginBottom:6}}>Add/edit parts. Assign colors.</div>
-    <div style={{display:"flex",gap:3,marginBottom:8,overflowX:"auto",paddingBottom:3}}>
-      {Object.entries(PRODUCTS).map(([k,v])=>(<button key={k} onClick={()=>setSp(k)} style={{...S.btn(sp===k?acc:"transparent",sp===k?"#fff":txd),padding:"4px 10px",fontSize:11,border:`1px solid ${sp===k?acc:cb}`,whiteSpace:"nowrap"}}>{v.icon} {v.name}</button>))}
+    <div style={{fontSize:12,fontWeight:800,color:txd,marginBottom:8}}>Add/edit parts. Assign colors.</div>
+    <div style={{display:"flex",gap:4,marginBottom:10,overflowX:"auto",paddingBottom:4}}>
+      {Object.entries(PRODUCTS).map(([k,v])=>(<button key={k} onClick={()=>setSp(k)} style={{...S.btn(sp===k?acc:"transparent",sp===k?"#fff":txd),padding:"5px 12px",fontSize:12,border:`1px solid ${sp===k?acc:cb}`,whiteSpace:"nowrap"}}>{v.icon} {v.name}</button>))}
     </div>
-    {pp.map(p=>(<div key={p.id} style={{padding:"6px 8px",marginBottom:3,background:dark?"#0e1019":"#f5f6f9",borderRadius:7,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
+    {pp.map(p=>(<div key={p.id} style={{padding:"8px 10px",marginBottom:4,background:dark?"#0e1019":"#f5f6f9",borderRadius:8,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
       {eid===p.id?(<div>
-        <input value={en} onChange={e=>setEn(e.target.value)} style={{...S.inp,marginBottom:4,height:30,fontSize:11}} placeholder="Name"/>
-        <div style={{display:"flex",gap:2,flexWrap:"wrap",marginBottom:4}}>{ck.map(c=>(<button key={c} onClick={()=>tg(ec,setEc,c)} style={{...S.bSm(ec.includes(c)?CLR[c]?.bg||"#888":"transparent",ec.includes(c)?"#fff":CLR[c]?.bg||"#888"),border:`1.5px solid ${CLR[c]?.bg||"#888"}`,padding:"2px 6px",fontSize:9}}>{CLR[c]?.lb||c}</button>))}</div>
-        <div style={{display:"flex",gap:3,alignItems:"center"}}><span style={{fontSize:10,color:txd,fontWeight:800}}>Per unit:</span>
-          <input type="number" value={ep} onChange={e=>setEp(parseInt(e.target.value)||1)} style={{...S.inp,width:44,height:26,fontSize:11,textAlign:"center",padding:"2px"}}/>
-          <div style={{flex:1}}/><button onClick={()=>{onEdit(p.id,en,ec,ep);setEid(null)}} style={{...S.bSm(okC),height:26}}>Save</button>
-          <button onClick={()=>setEid(null)} style={{...S.bSm(dark?"#333":"#ddd",tx),height:26}}>✕</button>
+        <input value={en} onChange={e=>setEn(e.target.value)} style={{...S.inp,marginBottom:6,height:32,fontSize:12}} placeholder="Name"/>
+        <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:6}}>{ck.map(c=>(<button key={c} onClick={()=>tg(ec,setEc,c)} style={{...S.bSm(ec.includes(c)?CLR[c]?.bg||"#888":"transparent",ec.includes(c)?"#fff":CLR[c]?.bg||"#888"),border:`1.5px solid ${CLR[c]?.bg||"#888"}`,padding:"3px 8px",fontSize:10}}>{CLR[c]?.lb||c}</button>))}</div>
+        <div style={{display:"flex",gap:4,alignItems:"center"}}><span style={{fontSize:11,color:txd,fontWeight:800}}>Per unit:</span>
+          <input type="number" value={ep} onChange={e=>setEp(parseInt(e.target.value)||1)} style={{...S.inp,width:50,height:28,fontSize:12,textAlign:"center",padding:"2px"}}/>
+          <div style={{flex:1}}/><button onClick={()=>{onEdit(p.id,en,ec,ep);setEid(null)}} style={{...S.bSm(okC),height:28}}>Save</button>
+          <button onClick={()=>setEid(null)} style={{...S.bSm(dark?"#333":"#ddd",tx),height:28}}>✕</button>
         </div>
-      </div>):cd===p.id?(<div style={{display:"flex",gap:3,alignItems:"center"}}><span style={{fontSize:11,fontWeight:800,color:dnC}}>Delete "{p.n}"?</span><div style={{flex:1}}/><button onClick={()=>{onDel(p.id);setCd(null)}} style={{...S.bSm(dnC),height:26}}>Yes</button><button onClick={()=>setCd(null)} style={{...S.bSm(dark?"#333":"#ddd",tx),height:26}}>No</button></div>
+      </div>):cd===p.id?(<div style={{display:"flex",gap:4,alignItems:"center"}}><span style={{fontSize:12,fontWeight:800,color:dnC}}>Delete "{p.n}"?</span><div style={{flex:1}}/><button onClick={()=>{onDel(p.id);setCd(null)}} style={{...S.bSm(dnC),height:28}}>Yes</button><button onClick={()=>setCd(null)} style={{...S.bSm(dark?"#333":"#ddd",tx),height:28}}>No</button></div>
       ):(<div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div><div style={{fontWeight:900,fontSize:12}}>{p.n}</div><div style={{display:"flex",gap:2,marginTop:2,flexWrap:"wrap"}}>{p.c.map(c=><CBadge key={c} color={c} CLR={CLR} size={8}/>)}<span style={{fontSize:9,color:txd,fontWeight:700}}>×{p.per}/u</span></div></div>
-        <div style={{display:"flex",gap:3}}><button onClick={()=>{setEid(p.id);setEn(p.n);setEc([...p.c]);setEp(p.per||1)}} style={S.iBtn}>✏️</button><button onClick={()=>setCd(p.id)} style={{...S.iBtn,color:dnC+"aa"}}>🗑️</button></div>
+        <div><div style={{fontWeight:900,fontSize:13}}>{p.n}</div><div style={{display:"flex",gap:3,marginTop:3,flexWrap:"wrap"}}>{p.c.map(c=><CBadge key={c} color={c} CLR={CLR} size={9}/>)}<span style={{fontSize:10,color:txd,fontWeight:700}}>×{p.per}/u</span></div></div>
+        <div style={{display:"flex",gap:4}}><button onClick={()=>{setEid(p.id);setEn(p.n);setEc([...p.c]);setEp(p.per||1)}} style={S.iBtn}>✏️</button><button onClick={()=>setCd(p.id)} style={{...S.iBtn,color:dnC+"aa"}}>🗑️</button></div>
       </div>)}
     </div>))}
-    {pp.length===0&&<div style={{textAlign:"center",color:txd,padding:10,fontSize:12}}>No parts. Add below.</div>}
-    <div style={{marginTop:10,padding:"10px",background:dark?"#0e1019":"#f5f6f9",borderRadius:8,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
-      <div style={{fontSize:10,fontWeight:900,color:acc,marginBottom:5}}>+ ADD PART TO {(PRODUCTS[sp]?.name||"?").toUpperCase()}</div>
-      <input placeholder="Part name" value={nn} onChange={e=>setNn(e.target.value)} style={{...S.inp,marginBottom:5,height:32,fontSize:11}}/>
-      <div style={{fontSize:9,fontWeight:900,color:txd,marginBottom:3}}>COLORS:</div>
-      <div style={{display:"flex",gap:2,flexWrap:"wrap",marginBottom:5}}>{ck.map(c=>(<button key={c} onClick={()=>tg(nc,setNc,c)} style={{...S.bSm(nc.includes(c)?CLR[c]?.bg||"#888":"transparent",nc.includes(c)?"#fff":CLR[c]?.bg||"#888"),border:`1.5px solid ${CLR[c]?.bg||"#888"}`,padding:"2px 6px",fontSize:9}}>{CLR[c]?.lb||c}</button>))}</div>
-      <div style={{display:"flex",gap:5,alignItems:"center",marginBottom:6}}><span style={{fontSize:10,color:txd,fontWeight:800}}>Per unit:</span><input type="number" value={np} onChange={e=>setNp(parseInt(e.target.value)||1)} style={{...S.inp,width:44,height:28,fontSize:11,textAlign:"center",padding:"2px"}}/></div>
-      <button onClick={()=>{if(!nn||nc.length===0){toast("Name+colors needed","err");return}onAdd(nn,sp,nc,np);setNn("");setNc([]);setNp(1)}} disabled={!nn||nc.length===0} style={{...S.btn(okC),width:"100%",height:34,borderRadius:7,opacity:(!nn||nc.length===0)?.5:1}}>Add Part</button>
+    {pp.length===0&&<div style={{textAlign:"center",color:txd,padding:12,fontSize:13}}>No parts. Add below.</div>}
+    <div style={{marginTop:12,padding:"12px",background:dark?"#0e1019":"#f5f6f9",borderRadius:10,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
+      <div style={{fontSize:11,fontWeight:900,color:acc,marginBottom:6}}>+ ADD PART TO {(PRODUCTS[sp]?.name||"?").toUpperCase()}</div>
+      <input placeholder="Part name" value={nn} onChange={e=>setNn(e.target.value)} style={{...S.inp,marginBottom:6,height:34,fontSize:12}}/>
+      <div style={{fontSize:10,fontWeight:900,color:txd,marginBottom:4}}>COLORS:</div>
+      <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:6}}>{ck.map(c=>(<button key={c} onClick={()=>tg(nc,setNc,c)} style={{...S.bSm(nc.includes(c)?CLR[c]?.bg||"#888":"transparent",nc.includes(c)?"#fff":CLR[c]?.bg||"#888"),border:`1.5px solid ${CLR[c]?.bg||"#888"}`,padding:"3px 8px",fontSize:10}}>{CLR[c]?.lb||c}</button>))}</div>
+      <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:8}}><span style={{fontSize:11,color:txd,fontWeight:800}}>Per unit:</span><input type="number" value={np} onChange={e=>setNp(parseInt(e.target.value)||1)} style={{...S.inp,width:50,height:30,fontSize:12,textAlign:"center",padding:"2px"}}/></div>
+      <button onClick={()=>{if(!nn||nc.length===0){toast("Name+colors needed","err");return}onAdd(nn,sp,nc,np);setNn("");setNc([]);setNp(1)}} disabled={!nn||nc.length===0} style={{...S.btn(okC),width:"100%",height:36,borderRadius:8,opacity:(!nn||nc.length===0)?.5:1}}>Add Part</button>
     </div>
   </div>);
 }
@@ -346,45 +346,50 @@ function MgrCross({PRODUCTS,CROSS,CLR,onAdd,onEdit,onDel,theme,toast}){
   const[nn,setNn]=useState("");const[np2,setNp2]=useState([]);const[nc,setNc]=useState([]);const[np,setNp]=useState(1);
   const[eid,setEid]=useState(null);const[en,setEn]=useState("");const[ep2,setEp2]=useState([]);const[ec,setEc]=useState([]);const[ep,setEp]=useState(1);
   const[cd,setCd]=useState(null);
-  const ck=Object.keys(CLR).filter(c=>c!=="universal"),pk=Object.keys(PRODUCTS);const tg=(a,s,v)=>a.includes(v)?s(a.filter(x=>x!==v)):s([...a,v]);
+  const ck=Object.keys(CLR),pk=Object.keys(PRODUCTS);const tg=(a,s,v)=>a.includes(v)?s(a.filter(x=>x!==v)):s([...a,v]);
   return(<div>
-    <div style={{fontSize:11,fontWeight:800,color:txd,marginBottom:6}}>Cross-parts shared between products.</div>
-    {CROSS.map(p=>(<div key={p.id} style={{padding:"6px 8px",marginBottom:3,background:dark?"#0e1019":"#f5f6f9",borderRadius:7,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
+    <div style={{fontSize:12,fontWeight:800,color:txd,marginBottom:8}}>Cross-parts shared between products.</div>
+    {CROSS.map(p=>(<div key={p.id} style={{padding:"8px 10px",marginBottom:4,background:dark?"#0e1019":"#f5f6f9",borderRadius:8,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
       {eid===p.id?(<div>
-        <input value={en} onChange={e=>setEn(e.target.value)} style={{...S.inp,marginBottom:4,height:30,fontSize:11}}/>
-        <div style={{fontSize:9,fontWeight:900,color:txd,marginBottom:3}}>PRODUCTS:</div>
-        <div style={{display:"flex",gap:2,flexWrap:"wrap",marginBottom:4}}>{pk.map(k=>(<button key={k} onClick={()=>tg(ep2,setEp2,k)} style={{...S.bSm(ep2.includes(k)?acc:"transparent",ep2.includes(k)?"#fff":txd),border:`1.5px solid ${ep2.includes(k)?acc:cb}`,padding:"2px 6px",fontSize:9}}>{PRODUCTS[k]?.icon} {PRODUCTS[k]?.name}</button>))}</div>
-        <div style={{fontSize:9,fontWeight:900,color:txd,marginBottom:3}}>COLORS:</div>
-        <div style={{display:"flex",gap:2,flexWrap:"wrap",marginBottom:4}}>{ck.map(c=>(<button key={c} onClick={()=>tg(ec,setEc,c)} style={{...S.bSm(ec.includes(c)?CLR[c]?.bg||"#888":"transparent",ec.includes(c)?"#fff":CLR[c]?.bg||"#888"),border:`1.5px solid ${CLR[c]?.bg||"#888"}`,padding:"2px 6px",fontSize:9}}>{CLR[c]?.lb||c}</button>))}</div>
-        <div style={{display:"flex",gap:3,alignItems:"center"}}><span style={{fontSize:10,color:txd,fontWeight:800}}>Per unit:</span><input type="number" value={ep} onChange={e=>setEp(parseInt(e.target.value)||1)} style={{...S.inp,width:44,height:26,fontSize:11,textAlign:"center",padding:"2px"}}/><div style={{flex:1}}/><button onClick={()=>{onEdit(p.id,en,ep2,ec,ep);setEid(null)}} style={{...S.bSm(okC),height:26}}>Save</button><button onClick={()=>setEid(null)} style={{...S.bSm(dark?"#333":"#ddd",tx),height:26}}>✕</button></div>
-      </div>):cd===p.id?(<div style={{display:"flex",gap:3,alignItems:"center"}}><span style={{fontSize:11,fontWeight:800,color:dnC}}>Delete?</span><div style={{flex:1}}/><button onClick={()=>{onDel(p.id);setCd(null)}} style={{...S.bSm(dnC),height:26}}>Yes</button><button onClick={()=>setCd(null)} style={{...S.bSm(dark?"#333":"#ddd",tx),height:26}}>No</button></div>
+        <input value={en} onChange={e=>setEn(e.target.value)} style={{...S.inp,marginBottom:6,height:32,fontSize:12}}/>
+        <div style={{fontSize:10,fontWeight:900,color:txd,marginBottom:4}}>PRODUCTS:</div>
+        <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:6}}>{pk.map(k=>(<button key={k} onClick={()=>tg(ep2,setEp2,k)} style={{...S.bSm(ep2.includes(k)?acc:"transparent",ep2.includes(k)?"#fff":txd),border:`1.5px solid ${ep2.includes(k)?acc:cb}`,padding:"3px 8px",fontSize:10}}>{PRODUCTS[k]?.icon} {PRODUCTS[k]?.name}</button>))}</div>
+        <div style={{fontSize:10,fontWeight:900,color:txd,marginBottom:4}}>COLORS:</div>
+        <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:6}}>{ck.map(c=>(<button key={c} onClick={()=>tg(ec,setEc,c)} style={{...S.bSm(ec.includes(c)?CLR[c]?.bg||"#888":"transparent",ec.includes(c)?"#fff":CLR[c]?.bg||"#888"),border:`1.5px solid ${CLR[c]?.bg||"#888"}`,padding:"3px 8px",fontSize:10}}>{CLR[c]?.lb||c}</button>))}</div>
+        <div style={{display:"flex",gap:4,alignItems:"center"}}><span style={{fontSize:11,color:txd,fontWeight:800}}>Per unit:</span><input type="number" value={ep} onChange={e=>setEp(parseInt(e.target.value)||1)} style={{...S.inp,width:50,height:28,fontSize:12,textAlign:"center",padding:"2px"}}/><div style={{flex:1}}/><button onClick={()=>{onEdit(p.id,en,ep2,ec,ep);setEid(null)}} style={{...S.bSm(okC),height:28}}>Save</button><button onClick={()=>setEid(null)} style={{...S.bSm(dark?"#333":"#ddd",tx),height:28}}>✕</button></div>
+      </div>):cd===p.id?(<div style={{display:"flex",gap:4,alignItems:"center"}}><span style={{fontSize:12,fontWeight:800,color:dnC}}>Delete?</span><div style={{flex:1}}/><button onClick={()=>{onDel(p.id);setCd(null)}} style={{...S.bSm(dnC),height:28}}>Yes</button><button onClick={()=>setCd(null)} style={{...S.bSm(dark?"#333":"#ddd",tx),height:28}}>No</button></div>
       ):(<div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div><div style={{fontWeight:900,fontSize:12}}>{p.n}</div><div style={{fontSize:9,color:txd,marginTop:1,fontWeight:700}}>Links: {(p.products||[]).map(k=>PRODUCTS[k]?.name||k).join(", ")}</div><div style={{display:"flex",gap:2,marginTop:2,flexWrap:"wrap"}}>{p.c.map(c=><CBadge key={c} color={c} CLR={CLR} size={8}/>)}</div></div>
-        <div style={{display:"flex",gap:3}}><button onClick={()=>{setEid(p.id);setEn(p.n);setEp2([...(p.products||[])]);setEc([...p.c]);setEp(p.per||1)}} style={S.iBtn}>✏️</button><button onClick={()=>setCd(p.id)} style={{...S.iBtn,color:dnC+"aa"}}>🗑️</button></div>
+        <div><div style={{fontWeight:900,fontSize:13}}>{p.n}</div><div style={{fontSize:10,color:txd,marginTop:2,fontWeight:700}}>Links: {(p.products||[]).map(k=>PRODUCTS[k]?.name||k).join(", ")}</div><div style={{display:"flex",gap:3,marginTop:3,flexWrap:"wrap"}}>{p.c.map(c=><CBadge key={c} color={c} CLR={CLR} size={9}/>)}</div></div>
+        <div style={{display:"flex",gap:4}}><button onClick={()=>{setEid(p.id);setEn(p.n);setEp2([...(p.products||[])]);setEc([...p.c]);setEp(p.per||1)}} style={S.iBtn}>✏️</button><button onClick={()=>setCd(p.id)} style={{...S.iBtn,color:dnC+"aa"}}>🗑️</button></div>
       </div>)}
     </div>))}
-    {CROSS.length===0&&<div style={{textAlign:"center",color:txd,padding:10,fontSize:12}}>No cross-parts yet.</div>}
-    <div style={{marginTop:10,padding:"10px",background:dark?"#0e1019":"#f5f6f9",borderRadius:8,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
-      <div style={{fontSize:10,fontWeight:900,color:acc,marginBottom:5}}>+ ADD CROSS-PART</div>
-      <input placeholder="Part name" value={nn} onChange={e=>setNn(e.target.value)} style={{...S.inp,marginBottom:5,height:32,fontSize:11}}/>
-      <div style={{fontSize:9,fontWeight:900,color:txd,marginBottom:3}}>LINK TO PRODUCTS:</div>
-      <div style={{display:"flex",gap:2,flexWrap:"wrap",marginBottom:4}}>{pk.map(k=>(<button key={k} onClick={()=>tg(np2,setNp2,k)} style={{...S.bSm(np2.includes(k)?acc:"transparent",np2.includes(k)?"#fff":txd),border:`1.5px solid ${np2.includes(k)?acc:cb}`,padding:"2px 6px",fontSize:9}}>{PRODUCTS[k]?.icon} {PRODUCTS[k]?.name}</button>))}</div>
-      <div style={{fontSize:9,fontWeight:900,color:txd,marginBottom:3}}>COLORS:</div>
-      <div style={{display:"flex",gap:2,flexWrap:"wrap",marginBottom:4}}>{ck.map(c=>(<button key={c} onClick={()=>tg(nc,setNc,c)} style={{...S.bSm(nc.includes(c)?CLR[c]?.bg||"#888":"transparent",nc.includes(c)?"#fff":CLR[c]?.bg||"#888"),border:`1.5px solid ${CLR[c]?.bg||"#888"}`,padding:"2px 6px",fontSize:9}}>{CLR[c]?.lb||c}</button>))}</div>
-      <div style={{display:"flex",gap:5,alignItems:"center",marginBottom:6}}><span style={{fontSize:10,color:txd,fontWeight:800}}>Per unit:</span><input type="number" value={np} onChange={e=>setNp(parseInt(e.target.value)||1)} style={{...S.inp,width:44,height:28,fontSize:11,textAlign:"center",padding:"2px"}}/></div>
-      <button onClick={()=>{if(!nn||np2.length<2||nc.length===0){toast("Name, 2+ products, colors","err");return}onAdd(nn,np2,nc,np);setNn("");setNp2([]);setNc([]);setNp(1)}} disabled={!nn||np2.length<2||nc.length===0} style={{...S.btn(okC),width:"100%",height:34,borderRadius:7,opacity:(!nn||np2.length<2||nc.length===0)?.5:1}}>Add Cross-Part</button>
+    {CROSS.length===0&&<div style={{textAlign:"center",color:txd,padding:12,fontSize:13}}>No cross-parts yet.</div>}
+    <div style={{marginTop:12,padding:"12px",background:dark?"#0e1019":"#f5f6f9",borderRadius:10,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
+      <div style={{fontSize:11,fontWeight:900,color:acc,marginBottom:6}}>+ ADD CROSS-PART</div>
+      <input placeholder="Part name" value={nn} onChange={e=>setNn(e.target.value)} style={{...S.inp,marginBottom:6,height:34,fontSize:12}}/>
+      <div style={{fontSize:10,fontWeight:900,color:txd,marginBottom:4}}>LINK TO PRODUCTS:</div>
+      <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:6}}>{pk.map(k=>(<button key={k} onClick={()=>tg(np2,setNp2,k)} style={{...S.bSm(np2.includes(k)?acc:"transparent",np2.includes(k)?"#fff":txd),border:`1.5px solid ${np2.includes(k)?acc:cb}`,padding:"3px 8px",fontSize:10}}>{PRODUCTS[k]?.icon} {PRODUCTS[k]?.name}</button>))}</div>
+      <div style={{fontSize:10,fontWeight:900,color:txd,marginBottom:4}}>COLORS:</div>
+      <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:6}}>{ck.map(c=>(<button key={c} onClick={()=>tg(nc,setNc,c)} style={{...S.bSm(nc.includes(c)?CLR[c]?.bg||"#888":"transparent",nc.includes(c)?"#fff":CLR[c]?.bg||"#888"),border:`1.5px solid ${CLR[c]?.bg||"#888"}`,padding:"3px 8px",fontSize:10}}>{CLR[c]?.lb||c}</button>))}</div>
+      <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:8}}><span style={{fontSize:11,color:txd,fontWeight:800}}>Per unit:</span><input type="number" value={np} onChange={e=>setNp(parseInt(e.target.value)||1)} style={{...S.inp,width:50,height:30,fontSize:12,textAlign:"center",padding:"2px"}}/></div>
+      <button onClick={()=>{if(!nn||np2.length<2||nc.length===0){toast("Name, 2+ products, colors","err");return}onAdd(nn,np2,nc,np);setNn("");setNp2([]);setNc([]);setNp(1)}} disabled={!nn||np2.length<2||nc.length===0} style={{...S.btn(okC),width:"100%",height:36,borderRadius:8,opacity:(!nn||np2.length<2||nc.length===0)?.5:1}}>Add Cross-Part</button>
     </div>
   </div>);
 }
 
-// ═══ BOM EDITOR ═══
+// ═══════════════════════════════════════
+// ═══  BOM EDITOR COMPONENT (NEW)  ═══
+// ═══════════════════════════════════════
 function BomEditor({pid,variantKey,profile,PRODUCTS,PARTS,CROSS,CLR,onSave,onClose,theme}){
   const{dark,tx,txd,acc,okC,dnC,cb,S}=theme;
   const parts=[...PARTS.filter(p=>p.p===pid),...CROSS.filter(cp=>cp.products&&cp.products.includes(pid))];
   const allColorKeys=Object.keys(CLR);
+  
+  // Variant color = the "base" color key for this variant
   const[baseColor,setBaseColor]=useState(variantKey||"");
   const[mapping,setMapping]=useState(()=>{
     if(profile)return{...profile};
+    // Auto-fill
     const m={};
     parts.forEach(p=>{
       if(p.c.length===1){m[p.id]=p.c[0]}
@@ -393,6 +398,8 @@ function BomEditor({pid,variantKey,profile,PRODUCTS,PARTS,CROSS,CLR,onSave,onClo
     });
     return m;
   });
+
+  // When base color changes, re-auto-fill parts that match
   const changeBase=(newBase)=>{
     setBaseColor(newBase);
     setMapping(prev=>{
@@ -400,49 +407,60 @@ function BomEditor({pid,variantKey,profile,PRODUCTS,PARTS,CROSS,CLR,onSave,onClo
       parts.forEach(p=>{
         if(p.c.length===1){m[p.id]=p.c[0]}
         else if(p.c.includes(newBase)){m[p.id]=newBase}
+        // Keep existing override if part doesn't have new base
       });
       return m;
     });
   };
+
   const setPartColor=(partId,color)=>setMapping(m=>({...m,[partId]:color}));
+
+  // Get variant-eligible colors (colors used by colored parts of this product)
   const variantColors=useMemo(()=>{
     const s=new Set();
     parts.forEach(p=>p.c.forEach(c=>{if(c!=="universal"&&c!=="black"&&c!=="abs"&&c!=="purecrystal"&&c!=="orangecrystal"&&c!=="random"&&c!=="white")s.add(c)}));
     return[...s];
   },[parts]);
+
   const canSave=baseColor&&parts.every(p=>mapping[p.id]);
+
   return(<div>
-    <div style={{fontSize:11,fontWeight:800,color:txd,marginBottom:8}}>
+    <div style={{fontSize:12,fontWeight:800,color:txd,marginBottom:10}}>
       Define which color each part uses for the <strong>{CLR[baseColor]?.lb||baseColor||"?"}</strong> variant of <strong>{PRODUCTS[pid]?.name}</strong>.
     </div>
-    <div style={{marginBottom:10}}>
-      <div style={{fontSize:9,fontWeight:900,color:acc,marginBottom:4}}>VARIANT BASE COLOR</div>
-      <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
-        {variantColors.map(c=>(<button key={c} onClick={()=>changeBase(c)} style={{...S.btn(baseColor===c?CLR[c]?.bg||"#888":"transparent",baseColor===c?"#fff":CLR[c]?.bg||"#888"),border:`2px solid ${CLR[c]?.bg||"#888"}`,padding:"5px 8px",fontSize:10}}>{CLR[c]?.lb||c}</button>))}
+
+    <div style={{marginBottom:14}}>
+      <div style={{fontSize:10,fontWeight:900,color:acc,marginBottom:6}}>VARIANT BASE COLOR</div>
+      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+        {variantColors.map(c=>(<button key={c} onClick={()=>changeBase(c)} style={{...S.btn(baseColor===c?CLR[c]?.bg||"#888":"transparent",baseColor===c?"#fff":CLR[c]?.bg||"#888"),border:`2px solid ${CLR[c]?.bg||"#888"}`,padding:"6px 10px",fontSize:11}}>{CLR[c]?.lb||c}</button>))}
+        {/* Allow custom variant key */}
         {allColorKeys.filter(c=>!variantColors.includes(c)&&c!=="universal").length>0&&(
-          <select value={variantColors.includes(baseColor)?"":(baseColor||"")} onChange={e=>{if(e.target.value)changeBase(e.target.value)}} style={{...S.inp,width:"auto",height:30,fontSize:10,padding:"3px 6px"}}>
+          <select value={variantColors.includes(baseColor)?"":(baseColor||"")} onChange={e=>{if(e.target.value)changeBase(e.target.value)}} style={{...S.inp,width:"auto",height:34,fontSize:11,padding:"4px 8px"}}>
             <option value="">More...</option>
-            {allColorKeys.filter(c=>!variantColors.includes(c)&&c!=="universal").map(c=>(<option key={c} value={c}>{CLR[c]?.lb||c}</option>))}
+            {allColorKeys.filter(c=>!variantColors.includes(c)&&c!=="universal").map(c=>(
+              <option key={c} value={c}>{CLR[c]?.lb||c}</option>
+            ))}
           </select>
         )}
       </div>
     </div>
-    <div style={{fontSize:9,fontWeight:900,color:acc,marginBottom:4}}>PART → COLOR MAPPING</div>
-    <div style={{maxHeight:"40vh",overflowY:"auto",marginBottom:10}}>
+
+    <div style={{fontSize:10,fontWeight:900,color:acc,marginBottom:6}}>PART → COLOR MAPPING</div>
+    <div style={{maxHeight:"45vh",overflowY:"auto",marginBottom:12}}>
       {parts.map(p=>{
         const cur=mapping[p.id]||"";
         const isOverride=cur&&cur!==baseColor&&p.c.length>1&&p.c.includes(baseColor);
         return(
-          <div key={p.id} style={{padding:"6px 8px",marginBottom:2,background:dark?"#0e1019":"#f5f6f9",borderRadius:6,border:`1px solid ${isOverride?(dnC+"55"):(dark?"#1a1d2e":"#eceef3")}`}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:3}}>
-              <span style={{fontWeight:800,fontSize:11,flex:1}}>{p.n}</span>
-              {p.products&&<span style={{fontSize:8,background:acc+"22",color:acc,padding:"1px 4px",borderRadius:3,fontWeight:800}}>CROSS</span>}
-              {isOverride&&<span style={{fontSize:8,background:dnC+"22",color:dnC,padding:"1px 4px",borderRadius:3,fontWeight:800,marginLeft:3}}>OVERRIDE</span>}
+          <div key={p.id} style={{padding:"8px 10px",marginBottom:3,background:dark?"#0e1019":"#f5f6f9",borderRadius:8,border:`1px solid ${isOverride?(dnC+"55"):(dark?"#1a1d2e":"#eceef3")}`}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+              <span style={{fontWeight:800,fontSize:12,flex:1}}>{p.n}</span>
+              {p.products&&<span style={{fontSize:9,background:acc+"22",color:acc,padding:"1px 5px",borderRadius:4,fontWeight:800}}>CROSS</span>}
+              {isOverride&&<span style={{fontSize:9,background:dnC+"22",color:dnC,padding:"1px 5px",borderRadius:4,fontWeight:800,marginLeft:4}}>OVERRIDE</span>}
             </div>
-            <div style={{display:"flex",gap:2,flexWrap:"wrap"}}>
+            <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
               {p.c.map(c=>(<button key={c} onClick={()=>setPartColor(p.id,c)} style={{
                 ...S.bSm(cur===c?CLR[c]?.bg||"#888":"transparent",cur===c?"#fff":CLR[c]?.bg||"#888"),
-                border:`1.5px solid ${CLR[c]?.bg||"#888"}`,padding:"2px 6px",fontSize:9,
+                border:`1.5px solid ${CLR[c]?.bg||"#888"}`,padding:"3px 8px",fontSize:10,
                 opacity:cur===c?1:.6
               }}>{CLR[c]?.lb||c}</button>))}
             </div>
@@ -450,72 +468,11 @@ function BomEditor({pid,variantKey,profile,PRODUCTS,PARTS,CROSS,CLR,onSave,onClo
         );
       })}
     </div>
-    <div style={{display:"flex",gap:6}}>
-      <button onClick={onClose} style={{...S.btn(dark?"#252836":"#e0e3ea",tx),flex:1,height:36,borderRadius:8}}>Cancel</button>
-      <button onClick={()=>{if(!canSave)return;onSave(pid,baseColor,mapping)}} disabled={!canSave} style={{...S.btn(okC),flex:1,height:36,borderRadius:8,opacity:canSave?1:.5}}>💾 Save Recipe</button>
-    </div>
-  </div>);
-}
 
-// ═══ BOM TAB (now used inside Settings modal) ═══
-function BomPanel({PRODUCTS,PARTS,CROSS,CLR,stock,bomProfiles,threshold,calcMax,onEdit,onDelete,theme}){
-  const{dark,tx,txd,acc,okC,dnC,cb,S}=theme;
-  const[bomTab,setBomTab]=useState(Object.keys(PRODUCTS)[0]||"");
-  const[bomExpanded,setBomExpanded]=useState({});
-  const getProductParts=pid=>[...PARTS.filter(p=>p.p===pid),...CROSS.filter(cp=>cp.products&&cp.products.includes(pid))];
-  const pid=bomTab;
-  const pp=getProductParts(pid);
-  const profiles=bomProfiles[pid]||{};
-  const profileKeys=Object.keys(profiles);
-  return(<div>
-    <div style={{display:"flex",gap:3,marginBottom:8,overflowX:"auto",paddingBottom:3}}>
-      {Object.keys(PRODUCTS).map(p=>(<button key={p} onClick={()=>setBomTab(p)} style={{...S.btn(bomTab===p?acc:"transparent",bomTab===p?"#fff":txd),padding:"4px 10px",fontSize:11,border:`1px solid ${bomTab===p?acc:cb}`,whiteSpace:"nowrap"}}>{PRODUCTS[p].icon} {PRODUCTS[p].name}</button>))}
+    <div style={{display:"flex",gap:8}}>
+      <button onClick={onClose} style={{...S.btn(dark?"#252836":"#e0e3ea",tx),flex:1,height:40,borderRadius:10}}>Cancel</button>
+      <button onClick={()=>{if(!canSave)return;onSave(pid,baseColor,mapping)}} disabled={!canSave} style={{...S.btn(okC),flex:1,height:40,borderRadius:10,opacity:canSave?1:.5}}>💾 Save Recipe</button>
     </div>
-    {profileKeys.length>0&&(<div style={{padding:"8px",background:dark?`linear-gradient(135deg,#131620 0%,${okC}06 100%)`:`linear-gradient(135deg,#fff 0%,${okC}06 100%)`,borderRadius:8,border:`1px solid ${acc}30`,marginBottom:8}}>
-      <div style={{fontSize:11,fontWeight:900,marginBottom:6}}>🏭 Capacity — {PRODUCTS[pid]?.name}</div>
-      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-        {profileKeys.map(vk=>{const mx=calcMax(pid,vk,stock);return(<div key={vk} style={{flex:1,minWidth:60,background:dark?"#0e1019":"#f5f6f9",borderRadius:6,padding:"6px",textAlign:"center",border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
-          <CBadge color={vk} CLR={CLR} size={9}/>
-          <div style={{fontSize:18,fontWeight:900,color:mx>0?okC:dnC,marginTop:2}}>{mx}</div>
-          <div style={{fontSize:8,fontWeight:800,color:txd}}>can make</div>
-        </div>)})}
-      </div>
-    </div>)}
-    <button onClick={()=>onEdit({pid,variantKey:"",profile:null})} style={{...S.btn(acc),width:"100%",height:34,borderRadius:7,fontSize:12,marginBottom:6}}>+ Create Variant Recipe</button>
-    {profileKeys.map(vk=>{
-      const prof=profiles[vk];const isExp=bomExpanded[`${pid}_${vk}`];const mx=calcMax(pid,vk,stock);
-      let bottleneck=null,bottleneckQty=Infinity;
-      pp.forEach(p=>{const mc=prof[p.id];if(mc){const av=Math.floor((stock[p.id]?.[mc]||0)/(p.per||1));if(av<bottleneckQty){bottleneckQty=av;bottleneck=p}}});
-      return(<div key={vk} style={{padding:"8px",marginBottom:4,background:dark?"#13162088":"#ffffffcc",borderRadius:8,border:`1.5px solid ${CLR[vk]?.bg||"#888"}30`}}>
-        <div onClick={()=>setBomExpanded(e=>({...e,[`${pid}_${vk}`]:!isExp}))} style={{cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <CBadge color={vk} CLR={CLR} size={11}/>
-            <span style={{fontWeight:900,fontSize:13}}>{PRODUCTS[pid]?.name}</span>
-            <span style={{fontSize:16,fontWeight:900,color:mx>0?okC:dnC}}>{mx}</span>
-          </div>
-          <span style={{fontSize:14,color:txd,transform:isExp?"rotate(90deg)":"none",transition:"transform .2s"}}>›</span>
-        </div>
-        {isExp&&(<div style={{marginTop:8}}>
-          {pp.map(p=>{const mc=prof[p.id]||"?";const stk=stock[p.id]?.[mc]||0;const isBottle=p===bottleneck;
-            return(<div key={p.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"4px 6px",marginBottom:1,background:dark?"#0e1019":"#f5f6f9",borderRadius:5,border:isBottle?`1.5px solid ${dnC}44`:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
-              <div style={{flex:1}}><span style={{fontWeight:800,fontSize:11}}>{p.n}</span>
-                {p.products&&<span style={{fontSize:7,background:acc+"22",color:acc,padding:"1px 3px",borderRadius:3,fontWeight:800,marginLeft:3}}>CROSS</span>}
-                {isBottle&&<span style={{fontSize:7,background:dnC+"22",color:dnC,padding:"1px 3px",borderRadius:3,fontWeight:800,marginLeft:3}}>BOTTLENECK</span>}
-              </div>
-              <div style={{display:"flex",alignItems:"center",gap:4}}>
-                <CBadge color={mc} CLR={CLR} size={8}/>
-                <span style={{fontSize:11,fontWeight:900,color:stk<=threshold?dnC:okC,minWidth:26,textAlign:"right"}}>{stk}</span>
-              </div>
-            </div>)
-          })}
-          <div style={{display:"flex",gap:4,marginTop:6}}>
-            <button onClick={()=>onEdit({pid,variantKey:vk,profile:prof})} style={{...S.btn(acc),flex:1,height:32,fontSize:11,borderRadius:6}}>✏️ Edit</button>
-            <button onClick={()=>onDelete(pid,vk)} style={{...S.btn("transparent",dnC),border:`1.5px solid ${dnC}44`,flex:1,height:32,fontSize:11,borderRadius:6}}>🗑️ Delete</button>
-          </div>
-        </div>)}
-      </div>);
-    })}
-    {profileKeys.length===0&&<div style={{textAlign:"center",color:txd,padding:12,fontSize:12}}>No recipes yet. Create one to define which color each part uses.</div>}
   </div>);
 }
 
@@ -531,8 +488,9 @@ function App(){
   const[asmRules,setAsmRules]=useState(DEF_ASM);
   const[bomProfiles,setBomProfiles]=useState(DEF_BOM);
   
-  const[mainTab,setMainTab]=useState("dashboard");
+  const[mainTab,setMainTab]=useState("dash");
   const[prodTab,setProdTab]=useState("sprinter");
+  const[bomTab,setBomTab]=useState("sprinter");
   const[stock,setStock]=useState({});
   const[logs,setLogs]=useState([]);
   const[confirmed,setConfirmed]=useState({});
@@ -551,7 +509,7 @@ function App(){
   const[asmColor,setAsmColor]=useState({});
   const[asmQty,setAsmQty]=useState({});
   const[confirmAsm,setConfirmAsm]=useState(null);
-  const[showClear,setShowClear]=useState(false);
+  const[showClear,setShowClear]=useState(null);
   const[logFilter,setLogFilter]=useState("all");
   const[stockFilter,setStockFilter]=useState("all");
   const[editLogId,setEditLogId]=useState(null);
@@ -559,13 +517,15 @@ function App(){
   const[partAdjust,setPartAdjust]=useState({});
   const[searchQuery,setSearchQuery]=useState("");
   const[showManage,setShowManage]=useState(null);
-  const[bomEditing,setBomEditing]=useState(null);
+  const[bomEditing,setBomEditing]=useState(null); // {pid, variantKey, profile}
+  const[bomExpanded,setBomExpanded]=useState({});
   const[stockVerify,setStockVerify]=useState(false);
   const[dashExpanded,setDashExpanded]=useState({});
+  const[showBomModal,setShowBomModal]=useState(false);
 
   const toastTimerRef=useRef(null);const notesRef=useRef(null);const productNotesRef=useRef({});
   const dirtyRef=useRef(false);const modalOpenRef=useRef(false);
-  useEffect(()=>{modalOpenRef.current=!!showManage||!!bomEditing},[showManage,bomEditing]);
+  useEffect(()=>{modalOpenRef.current=!!showManage||!!bomEditing||showBomModal},[showManage,bomEditing,showBomModal]);
   useEffect(()=>{localStorage.setItem(THEME_KEY,JSON.stringify(dark))},[dark]);
 
   const allParts=useMemo(()=>[...PARTS,...CROSS],[PARTS,CROSS]);
@@ -573,8 +533,10 @@ function App(){
   
   // ═══ BOM-AWARE COLOR RESOLUTION ═══
   const getPartColorForAsm=useCallback((part,color,pid)=>{
+    // First check BOM profile
     const bp=bomProfiles[pid]?.[color];
     if(bp&&bp[part.id])return bp[part.id];
+    // Fallback: original logic
     if(part.c.length===1)return part.c[0];
     if(part.c.includes(color))return color;
     const r=asmRules[pid];
@@ -584,13 +546,16 @@ function App(){
 
   const getAsmColors=useCallback(pid=>{
     const pp=getProductParts(pid);
+    // If BOM profiles exist, those are the assemblable variants
     const bpKeys=Object.keys(bomProfiles[pid]||{});
     if(bpKeys.length>0){
+      // Only allow colors that have complete BOM profiles
       return bpKeys.filter(c=>{
         const bp=bomProfiles[pid][c];
         return pp.every(p=>bp[p.id]&&p.c.includes(bp[p.id]));
       });
     }
+    // Fallback: old auto-detect
     const ac=new Set();
     pp.forEach(p=>p.c.forEach(c=>{if(c!=="universal"&&c!=="black"&&c!=="abs"&&c!=="purecrystal"&&c!=="orangecrystal"&&c!=="random"&&c!=="white")ac.add(c)}));
     return[...ac].filter(c=>pp.every(p=>getPartColorForAsm(p,c,pid)!==null));
@@ -729,6 +694,7 @@ function App(){
   const editCross=(id,n,pids,c,per)=>{const nc=CROSS.map(p=>p.id===id?{...p,n,products:pids,c,per:per||1}:p);setCross(nc);const ns={...stock};if(!ns[id])ns[id]={};c.forEach(k=>{if(ns[id][k]===undefined)ns[id][k]=0});setStock(ns);markDirty({crossParts:nc,stock:ns})};
   const deleteCross=id=>{const nc=CROSS.filter(p=>p.id!==id);setCross(nc);const ns={...stock};delete ns[id];setStock(ns);markDirty({crossParts:nc,stock:ns})};
 
+  // ═══ BOM PROFILE CRUD ═══
   const saveBomProfile=(pid,variantKey,mapping)=>{
     const nb={...bomProfiles,[pid]:{...(bomProfiles[pid]||{}),[variantKey]:mapping}};
     setBomProfiles(nb);markDirty({bomProfiles:nb});setBomEditing(null);showToast(`💾 ${CLR[variantKey]?.lb||variantKey} ${PRODUCTS[pid]?.name} recipe saved!`);
@@ -742,174 +708,96 @@ function App(){
   const doExportCSV=()=>{let csv="Product,Part,Color,Stock\n";allParts.forEach(p=>{const pr=p.products?"Cross":(PRODUCTS[p.p]?.name||p.p);p.c.forEach(c=>{csv+=`"${pr}","${p.n}","${CLR[c]?.lb||c}",${stock[p.id]?.[c]||0}\n`})});dlFile(new Blob([csv],{type:"text/csv"}),`littlestar_${new Date().toISOString().slice(0,10)}.csv`)};
   const handleImport=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.stock||d.products){const mg=loadData(d);markDirty({stock:mg,logs:d.logs||[],confirmed:d.confirmed||{},colors:d.colors||CLR,products:d.products||PRODUCTS,parts:d.parts||PARTS,crossParts:d.crossParts||CROSS,asmRules:d.asmRules||asmRules,bomProfiles:d.bomProfiles||bomProfiles});showToast("Imported!")}else showToast("Invalid","err")}catch(err){showToast("Error","err")}};rd.readAsText(f);e.target.value=""};
   const wipeData=()=>{const es={};allParts.forEach(p=>{es[p.id]={};p.c.forEach(c=>{es[p.id][c]=0})});setStock(es);setLogs([]);setConfirmed({});setNotes("");setProductNotes({});setProductThresholds({});markDirty({stock:es,logs:[],confirmed:{},notes:"",productNotes:{},productThresholds:{}});showToast("Wiped","err")};
+  const resetNumbers=()=>{const es={};allParts.forEach(p=>{es[p.id]={};p.c.forEach(c=>{es[p.id][c]=0})});setStock(es);setLogs([]);setConfirmed({});markDirty({stock:es,logs:[],confirmed:{}});showToast("Numbers reset, config kept")};
+  const saveConfig=()=>{const cfg={colors:CLR,products:PRODUCTS,parts:PARTS,crossParts:CROSS,asmRules,bomProfiles,savedAt:new Date().toISOString()};dlFile(new Blob([JSON.stringify(cfg,null,2)],{type:"application/json"}),`littlestar_config_${new Date().toISOString().slice(0,10)}.json`);showToast("💾 Config saved!")};
+  const handleLoadConfig=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.colors||d.products||d.parts){if(d.colors)setCLR(p=>({...DEF_COLORS,...d.colors}));if(d.products)setProducts(d.products);if(d.parts)setParts(d.parts);if(d.crossParts!==undefined)setCross(d.crossParts||[]);if(d.asmRules)setAsmRules(d.asmRules);if(d.bomProfiles!==undefined)setBomProfiles(d.bomProfiles||{});const ap=[...(d.parts||PARTS),...(d.crossParts||CROSS)];const ns={...stock};ap.forEach(p=>{if(!ns[p.id]){ns[p.id]={};p.c.forEach(c=>{ns[p.id][c]=0})}else{p.c.forEach(c=>{if(ns[p.id][c]===undefined)ns[p.id][c]=0})}});setStock(ns);markDirty({colors:d.colors||CLR,products:d.products||PRODUCTS,parts:d.parts||PARTS,crossParts:d.crossParts||CROSS,asmRules:d.asmRules||asmRules,bomProfiles:d.bomProfiles||bomProfiles,stock:ns});showToast("📂 Config loaded!")}else showToast("Invalid config","err")}catch(err){showToast("Error reading file","err")}};rd.readAsText(f);e.target.value=""};
   const dataSize=useMemo(()=>(new Blob([JSON.stringify(serialize())]).size/1024).toFixed(1),[serialize]);
 
   const bg=dark?"#0a0c14":"#f0f2f7",card=dark?"#13162088":"#ffffffcc",cb=dark?"#1e2235":"#dfe2ea",tx=dark?"#e8eaf0":"#1a1a2e",txd=dark?"#6b7194":"#7c7f96",acc="#4f8cff",okC="#22c55e",dnC="#ef4444",wnC="#f59e0b";
-  const S={app:{fontFamily:"'Nunito',sans-serif",background:bg,color:tx,minHeight:"100vh",maxWidth:520,margin:"0 auto",paddingBottom:82,fontSize:13,WebkitFontSmoothing:"antialiased"},
-    crd:{background:card,border:`1px solid ${dark?"#1e2235":"#e2e5ec"}`,borderRadius:10,margin:"4px 6px",padding:"8px 10px",backdropFilter:"blur(12px)",boxShadow:dark?"0 2px 10px rgba(0,0,0,.2)":"0 1px 4px rgba(0,0,0,.04)"},
-    btn:(b,c="#fff")=>({background:b,color:c,border:"none",borderRadius:7,padding:"5px 10px",fontWeight:800,fontSize:13,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",gap:3,boxShadow:`0 2px 6px ${b}33`}),
-    bSm:(b,c="#fff")=>({background:b,color:c,border:"none",borderRadius:5,padding:"3px 7px",fontWeight:800,fontSize:11,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center"}),
-    inp:{background:dark?"#0e1019":"#f5f6f9",border:`1.5px solid ${dark?"#252a40":"#dde0e8"}`,borderRadius:7,padding:"6px 8px",color:tx,fontSize:13,fontFamily:"'Nunito',sans-serif",width:"100%",boxSizing:"border-box",outline:"none",transition:"border-color .2s"},
-    lbl:{fontSize:9,fontWeight:900,color:txd,marginBottom:4,display:"block",textTransform:"uppercase",letterSpacing:.7},
-    tag:c=>({display:"inline-block",padding:"2px 6px",borderRadius:8,fontSize:9,fontWeight:800,background:c+"18",color:c}),
-    iBtn:{background:"none",border:"none",color:txd,fontSize:14,cursor:"pointer",padding:"3px 5px",borderRadius:6},
-    nav:{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:520,background:dark?"#0d0f18f2":"#ffffffe8",borderTop:`1px solid ${dark?"#1a1d2e":"#e0e3ea"}`,display:"flex",zIndex:100,backdropFilter:"blur(16px)",paddingBottom:"env(safe-area-inset-bottom)"},
-    nI:a=>({flex:1,padding:"10px 0 12px",textAlign:"center",background:"none",border:"none",color:a?acc:txd,fontSize:9,fontWeight:a?900:700,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,position:"relative"}),
-    toast:{position:"fixed",top:14,left:"50%",background:dark?"#1a1d27ee":"#ffffffee",color:toast?.type==="err"?dnC:toast?.type==="wrn"?wnC:okC,padding:"8px 16px",borderRadius:10,fontWeight:800,fontSize:12,zIndex:9999,boxShadow:dark?"0 6px 24px rgba(0,0,0,.5)":"0 6px 24px rgba(0,0,0,.1)",fontFamily:"'Nunito',sans-serif",maxWidth:"88%",textAlign:"center",border:`1.5px solid ${toast?.type==="err"?dnC+"44":toast?.type==="wrn"?wnC+"44":okC+"44"}`,backdropFilter:"blur(12px)"},
-    subNav:{display:"flex",overflowX:"auto",gap:0,background:dark?"#0d0f18ee":"#ffffffee",backdropFilter:"blur(12px)",borderBottom:`1px solid ${dark?"#1a1d2e":"#e0e3ea"}`,position:"sticky",top:0,zIndex:90},
-    subNI:a=>({padding:"8px 10px",whiteSpace:"nowrap",background:"none",border:"none",borderBottom:a?`2.5px solid ${acc}`:"2.5px solid transparent",color:a?acc:txd,fontSize:11,fontWeight:a?900:700,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"flex",alignItems:"center",gap:3})
-  };
+  const S={app:{fontFamily:"'Nunito',sans-serif",background:bg,color:tx,minHeight:"100vh",maxWidth:520,margin:"0 auto",paddingBottom:86,fontSize:14,WebkitFontSmoothing:"antialiased"},crd:{background:card,border:`1px solid ${dark?"#1e2235":"#e2e5ec"}`,borderRadius:12,margin:"6px 8px",padding:"10px 12px",backdropFilter:"blur(12px)",boxShadow:dark?"0 2px 12px rgba(0,0,0,.2)":"0 1px 6px rgba(0,0,0,.05)"},btn:(b,c="#fff")=>({background:b,color:c,border:"none",borderRadius:8,padding:"6px 12px",fontWeight:800,fontSize:14,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",gap:4,boxShadow:`0 2px 8px ${b}33`}),bSm:(b,c="#fff")=>({background:b,color:c,border:"none",borderRadius:6,padding:"4px 8px",fontWeight:800,fontSize:12,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center"}),inp:{background:dark?"#0e1019":"#f5f6f9",border:`1.5px solid ${dark?"#252a40":"#dde0e8"}`,borderRadius:8,padding:"7px 10px",color:tx,fontSize:14,fontFamily:"'Nunito',sans-serif",width:"100%",boxSizing:"border-box",outline:"none",transition:"border-color .2s"},lbl:{fontSize:10,fontWeight:900,color:txd,marginBottom:5,display:"block",textTransform:"uppercase",letterSpacing:.8},tag:c=>({display:"inline-block",padding:"3px 8px",borderRadius:10,fontSize:10,fontWeight:800,background:c+"18",color:c}),iBtn:{background:"none",border:"none",color:txd,fontSize:16,cursor:"pointer",padding:"4px 6px",borderRadius:8},nav:{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:520,background:dark?"#0d0f18ee":"#ffffffee",borderTop:`1px solid ${dark?"#1a1d2e":"#e0e3ea"}`,display:"flex",zIndex:100,backdropFilter:"blur(16px)",paddingBottom:"env(safe-area-inset-bottom)"},nI:a=>({flex:1,padding:"10px 0 12px",textAlign:"center",background:"none",border:"none",color:a?acc:txd,fontSize:9,fontWeight:a?900:700,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,position:"relative"}),toast:{position:"fixed",top:16,left:"50%",background:dark?"#1a1d27ee":"#ffffffee",color:toast?.type==="err"?dnC:toast?.type==="wrn"?wnC:okC,padding:"10px 20px",borderRadius:12,fontWeight:800,fontSize:13,zIndex:9999,boxShadow:dark?"0 8px 32px rgba(0,0,0,.5)":"0 8px 32px rgba(0,0,0,.12)",fontFamily:"'Nunito',sans-serif",maxWidth:"88%",textAlign:"center",border:`1.5px solid ${toast?.type==="err"?dnC+"44":toast?.type==="wrn"?wnC+"44":okC+"44"}`,backdropFilter:"blur(12px)"},subNav:{display:"flex",overflowX:"auto",gap:0,background:dark?"#0d0f18ee":"#ffffffee",backdropFilter:"blur(12px)",borderBottom:`1px solid ${dark?"#1a1d2e":"#e0e3ea"}`,position:"sticky",top:0,zIndex:90},subNI:a=>({padding:"10px 12px",whiteSpace:"nowrap",background:"none",border:"none",borderBottom:a?`2.5px solid ${acc}`:"2.5px solid transparent",color:a?acc:txd,fontSize:12,fontWeight:a?900:700,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"flex",alignItems:"center",gap:4})};
   const theme={dark,tx,txd,acc,okC,dnC,wnC,cb,card,S};
 
-  if(!loaded)return(<div style={{...S.app,display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh"}}><div style={{textAlign:"center"}}><div style={{fontSize:44,marginBottom:10,animation:"pulse 1.5s ease infinite"}}>🏭</div><div style={{fontSize:20,fontWeight:900}}>Little Star</div><div style={{color:txd,marginTop:5,fontSize:11,fontWeight:700}}>Loading...</div></div></div>);
+  if(!loaded)return(<div style={{...S.app,display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh"}}><div style={{textAlign:"center"}}><div style={{fontSize:48,marginBottom:12,animation:"pulse 1.5s ease infinite"}}>🏭</div><div style={{fontSize:22,fontWeight:900}}>Little Star</div><div style={{color:txd,marginTop:6,fontSize:12,fontWeight:700}}>Loading...</div></div></div>);
 
   const prp={stock,confirmed,editing,editVal,partAdjust,onSetEditing:setEditing,onSetEditVal:setEditVal,onSetPartAdjust:handleSetPA,onSaveStock:saveStock,onAdjustStock:adjustStock,onToggleConfirm:toggleConfirm,theme,threshold,productThresholds,CLR,PRODUCTS};
 
   // ═══ RENDER: DASHBOARD ═══
-  const renderDashboard=()=>{
-    // Collect warnings
-    const warnings=[];
-    allParts.forEach(p=>{
-      const prodKey=p.products?"cross":p.p;
-      const at=productThresholds[prodKey]!==undefined?productThresholds[prodKey]:threshold;
-      p.c.forEach(c=>{
-        const val=stock[p.id]?.[c]||0;
-        if(val<=at){
-          warnings.push({part:p,color:c,val,at,isZero:val===0,prodKey});
-        }
+  const renderDash=()=>{
+    const pk=Object.keys(PRODUCTS);
+    const hasLowStock=(pid,vk)=>{
+      const pp=getProductParts(pid);
+      const bp=bomProfiles[pid]?.[vk];
+      const at=productThresholds[pid]!==undefined?productThresholds[pid]:threshold;
+      return pp.some(p=>{
+        const mc=bp?bp[p.id]:getPartColorForAsm(p,vk,pid);
+        if(!mc)return false;
+        return(stock[p.id]?.[mc]||0)<=at;
       });
-    });
-    const critical=warnings.filter(w=>w.isZero);
-    const low=warnings.filter(w=>!w.isZero);
-
+    };
+    const crossHasLow=()=>{
+      const at=productThresholds["cross"]!==undefined?productThresholds["cross"]:threshold;
+      return CROSS.some(p=>p.c.some(c=>(stock[p.id]?.[c]||0)<=at));
+    };
+    const dcrd={background:card,border:`1px solid ${dark?"#1e2235":"#e2e5ec"}`,borderRadius:14,margin:"0 10px 10px",padding:"14px 16px",backdropFilter:"blur(12px)",boxShadow:dark?"0 2px 12px rgba(0,0,0,.2)":"0 1px 6px rgba(0,0,0,.05)"};
     return(<div>
-      <div style={{padding:"8px 8px 4px",fontSize:14,fontWeight:900}}>🏠 Dashboard</div>
-      
-      {/* Warnings Section */}
-      {warnings.length>0?(<div style={{...S.crd,border:`1.5px solid ${critical.length>0?dnC:wnC}30`,padding:"8px 10px"}}>
-        <div style={{fontSize:12,fontWeight:900,marginBottom:6,display:"flex",alignItems:"center",gap:4}}>
-          {critical.length>0?"🚨":"⚠️"} {warnings.length} Warning{warnings.length>1?"s":""}
-          <span style={{fontSize:10,fontWeight:700,color:txd,marginLeft:"auto"}}>{critical.length} critical · {low.length} low</span>
-        </div>
-        {critical.length>0&&(<div style={{marginBottom:6}}>
-          <div style={{fontSize:9,fontWeight:900,color:dnC,marginBottom:3,textTransform:"uppercase",letterSpacing:.5}}>OUT OF STOCK ({critical.length})</div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
-            {critical.slice(0,12).map((w,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:3,padding:"3px 6px",background:dnC+"12",borderRadius:5,border:`1px solid ${dnC}25`}}>
-              <span style={{fontSize:10,fontWeight:800}}>{w.part.n}</span>
-              <CBadge color={w.color} CLR={CLR} size={7}/>
-              <span style={{fontSize:10,fontWeight:900,color:dnC}}>0</span>
-            </div>))}
-            {critical.length>12&&<span style={{fontSize:10,color:txd,fontWeight:800,padding:"3px 6px"}}>+{critical.length-12} more</span>}
-          </div>
-        </div>)}
-        {low.length>0&&(<div>
-          <div style={{fontSize:9,fontWeight:900,color:wnC,marginBottom:3,textTransform:"uppercase",letterSpacing:.5}}>LOW STOCK ({low.length})</div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
-            {low.slice(0,10).map((w,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:3,padding:"3px 6px",background:wnC+"12",borderRadius:5,border:`1px solid ${wnC}25`}}>
-              <span style={{fontSize:10,fontWeight:800}}>{w.part.n}</span>
-              <CBadge color={w.color} CLR={CLR} size={7}/>
-              <span style={{fontSize:10,fontWeight:900,color:wnC}}>{w.val}</span>
-            </div>))}
-            {low.length>10&&<span style={{fontSize:10,color:txd,fontWeight:800,padding:"3px 6px"}}>+{low.length-10} more</span>}
-          </div>
-        </div>)}
-      </div>):(<div style={{...S.crd,border:`1.5px solid ${okC}30`,padding:"10px 12px",textAlign:"center"}}>
-        <span style={{fontSize:14}}>✅</span> <span style={{fontSize:12,fontWeight:900,color:okC}}>All stock above threshold</span>
-      </div>)}
-
-      {/* Per-product expandable grids */}
-      {Object.keys(PRODUCTS).map(pid=>{
+      <div style={{padding:"12px 12px 6px",fontSize:16,fontWeight:900}}>📊 Production</div>
+      {pk.map(pid=>{
         const ac=getAsmColors(pid);
         const isExp=dashExpanded[pid];
         const pp=getProductParts(pid);
-        const hasBom=Object.keys(bomProfiles[pid]||{}).length>0;
-        
-        // Count low parts for this product
-        const at=productThresholds[pid]!==undefined?productThresholds[pid]:threshold;
-        let lowCount=0;
-        pp.forEach(p=>p.c.forEach(c=>{if((stock[p.id]?.[c]||0)<=at)lowCount++}));
-
-        return(<div key={pid} style={{...S.crd,padding:0,overflow:"hidden"}}>
-          <div onClick={()=>setDashExpanded(e=>({...e,[pid]:!isExp}))} style={{cursor:"pointer",padding:"10px 10px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <div style={{display:"flex",alignItems:"center",gap:6}}>
-              <span style={{fontSize:18}}>{PRODUCTS[pid].icon}</span>
-              <span style={{fontWeight:900,fontSize:14}}>{PRODUCTS[pid].name}</span>
-              {lowCount>0&&<span style={{fontSize:9,background:wnC+"22",color:wnC,padding:"1px 5px",borderRadius:4,fontWeight:800}}>{lowCount} low</span>}
-            </div>
-            <div style={{display:"flex",alignItems:"center",gap:6}}>
-              {ac.map(c=>{const mx=calcMax(pid,c,stock);return(
-                <div key={c} style={{display:"flex",alignItems:"center",gap:2}}>
-                  <CBadge color={c} CLR={CLR} size={8}/>
-                  <span style={{fontSize:13,fontWeight:900,color:mx>0?okC:dnC}}>{mx}</span>
-                </div>
+        return(<div key={pid} style={{...dcrd,border:isExp?`1.5px solid ${acc}44`:dcrd.border}}>
+          <div onClick={()=>setDashExpanded(e=>({...e,[pid]:!isExp}))} style={{cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:22}}>{PRODUCTS[pid]?.icon}</span>
+            <span style={{fontSize:16,fontWeight:900,flex:1}}>{PRODUCTS[pid]?.name}</span>
+            <div style={{display:"flex",gap:6}}>
+              {ac.map(c=>{const mx=calcMax(pid,c,stock);const low=hasLowStock(pid,c);return(
+                <span key={c} style={{position:"relative",display:"inline-flex",alignItems:"center",justifyContent:"center",minWidth:36,height:28,borderRadius:8,background:CLR[c]?.bg||"#888",color:CLR[c]?.fg||"#fff",fontSize:14,fontWeight:900,padding:"0 10px",boxShadow:low?`0 0 0 2px #ef4444, 0 0 10px #ef444466`:`0 2px 8px ${CLR[c]?.gw||"transparent"}`}}>
+                  {mx}{low&&<span style={{position:"absolute",top:-4,right:-4,width:10,height:10,borderRadius:"50%",background:"#ef4444",border:`2px solid ${dark?"#0a0c14":"#f0f2f7"}`}}/>}
+                </span>
               )})}
-              {ac.length===0&&<span style={{fontSize:10,color:txd}}>No recipes</span>}
-              <span style={{fontSize:14,color:txd,transform:isExp?"rotate(90deg)":"none",transition:"transform .2s",marginLeft:2}}>›</span>
             </div>
+            <span style={{fontSize:16,color:txd,transform:isExp?"rotate(90deg)":"none",transition:"transform .2s",marginLeft:2}}>›</span>
           </div>
-
-          {isExp&&(<div style={{padding:"0 8px 8px",borderTop:`1px solid ${cb}`}}>
-            {/* Quick assembly capacity */}
-            {ac.length>0&&(<div style={{display:"flex",gap:4,marginTop:6,marginBottom:4}}>
-              {ac.map(c=>{const mx=calcMax(pid,c,stock);return(<div key={c} style={{flex:1,background:dark?"#0e1019":"#f5f6f9",borderRadius:6,padding:"6px 4px",textAlign:"center",border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
-                <CBadge color={c} CLR={CLR} size={9}/>
-                <div style={{fontSize:18,fontWeight:900,color:mx>0?okC:dnC,marginTop:2}}>{mx}</div>
-                <div style={{fontSize:8,fontWeight:800,color:txd}}>can make</div>
-              </div>)})}
-            </div>)}
-
-            {/* Part stock list - compact */}
+          {isExp&&(<div style={{marginTop:12,borderTop:`1px solid ${cb}`,paddingTop:10}}>
             {pp.map(p=>{
-              return p.c.map(c=>{
-                const val=stock[p.id]?.[c]||0;
-                const sc=val<=at?val===0?dnC:wnC:okC;
-                return(<div key={`${p.id}_${c}`} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"3px 6px",marginBottom:1,borderRadius:4,background:val<=at?(val===0?dnC+"08":wnC+"08"):"transparent"}}>
-                  <span style={{fontSize:11,fontWeight:700,flex:1}}>{p.n}</span>
-                  <CBadge color={c} CLR={CLR} size={7}/>
-                  <span style={{fontSize:12,fontWeight:900,color:sc,minWidth:32,textAlign:"right"}}>{val.toLocaleString()}</span>
-                </div>);
-              });
+              const isCross=!!p.products;
+              return(<div key={p.id}>
+                {p.c.map(c=>{
+                  const val=stock[p.id]?.[c]||0;
+                  const prodKey=isCross?"cross":p.p;
+                  const at=productThresholds[prodKey]!==undefined?productThresholds[prodKey]:threshold;
+                  const isLow=val<=at;
+                  return(<div key={c} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 2px",gap:6}}>
+                    <span style={{fontSize:13,fontWeight:700,flex:1,color:txd}}>{p.n}{isCross&&<span style={{fontSize:9,background:acc+"22",color:acc,padding:"1px 5px",borderRadius:4,fontWeight:800,marginLeft:4}}>CROSS</span>}</span>
+                    <CBadge color={c} CLR={CLR} size={10}/>
+                    <span style={{fontSize:14,fontWeight:900,color:isLow?dnC:okC,minWidth:36,textAlign:"right"}}>{val.toLocaleString()}</span>
+                  </div>);
+                })}
+              </div>);
             })}
-
-            {/* Quick link to assembly */}
-            <button onClick={()=>{setMainTab("products");setProdTab(pid)}} style={{...S.btn(acc+"22",acc),width:"100%",height:30,borderRadius:6,fontSize:11,marginTop:4,border:`1px solid ${acc}33`}}>⚙️ Go to Assembly</button>
           </div>)}
         </div>);
       })}
-
-      {/* Cross parts summary */}
-      {CROSS.length>0&&(<div style={{...S.crd,padding:0,overflow:"hidden"}}>
-        <div onClick={()=>setDashExpanded(e=>({...e,cross:!e.cross}))} style={{cursor:"pointer",padding:"10px 10px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <span style={{fontSize:18}}>🔗</span>
-            <span style={{fontWeight:900,fontSize:14}}>Cross Parts</span>
-          </div>
-          <span style={{fontSize:14,color:txd,transform:dashExpanded.cross?"rotate(90deg)":"none",transition:"transform .2s"}}>›</span>
+      <div style={{...dcrd,border:dashExpanded.cross?`1.5px solid ${acc}44`:dcrd.border}}>
+        <div onClick={()=>setDashExpanded(e=>({...e,cross:!dashExpanded.cross}))} style={{cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:22}}>🔗</span>
+          <span style={{fontSize:16,fontWeight:900,flex:1}}>Cross Parts</span>
+          {crossHasLow()&&<span style={{width:10,height:10,borderRadius:"50%",background:"#ef4444",flexShrink:0}}/>}
+          <span style={{fontSize:16,color:txd,transform:dashExpanded.cross?"rotate(90deg)":"none",transition:"transform .2s"}}>›</span>
         </div>
-        {dashExpanded.cross&&(<div style={{padding:"0 8px 8px",borderTop:`1px solid ${cb}`}}>
+        {dashExpanded.cross&&(<div style={{marginTop:12,borderTop:`1px solid ${cb}`,paddingTop:10}}>
           {CROSS.map(p=>p.c.map(c=>{
             const val=stock[p.id]?.[c]||0;
-            const at2=productThresholds.cross!==undefined?productThresholds.cross:threshold;
-            const sc=val<=at2?val===0?dnC:wnC:okC;
-            return(<div key={`${p.id}_${c}`} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"3px 6px",marginBottom:1,borderRadius:4}}>
-              <span style={{fontSize:11,fontWeight:700,flex:1}}>{p.n}</span>
-              <CBadge color={c} CLR={CLR} size={7}/>
-              <span style={{fontSize:12,fontWeight:900,color:sc,minWidth:32,textAlign:"right"}}>{val.toLocaleString()}</span>
+            const at=productThresholds["cross"]!==undefined?productThresholds["cross"]:threshold;
+            const isLow=val<=at;
+            return(<div key={`${p.id}_${c}`} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 2px",gap:6}}>
+              <span style={{fontSize:13,fontWeight:700,flex:1,color:txd}}>{p.n}</span>
+              <CBadge color={c} CLR={CLR} size={10}/>
+              <span style={{fontSize:14,fontWeight:900,color:isLow?dnC:okC,minWidth:36,textAlign:"right"}}>{val.toLocaleString()}</span>
             </div>);
           }))}
         </div>)}
-      </div>)}
-
-      {/* Recent Activity */}
-      {logs.length>0&&(<div style={{...S.crd,padding:"8px 10px"}}>
-        <div style={{fontSize:11,fontWeight:900,marginBottom:4}}>📝 Recent Activity</div>
-        {logs.slice(0,5).map(l=>(<div key={l.id} style={{display:"flex",alignItems:"center",gap:6,padding:"3px 0",borderBottom:`1px solid ${cb}`}}>
-          <div style={{width:6,height:6,borderRadius:"50%",background:l.a==="assemble"?okC:l.a==="adjust"||l.a==="stock_edit"?acc:wnC,flexShrink:0}}/>
-          <span style={{fontSize:11,fontWeight:700,flex:1}}>{l.d}</span>
-          <span style={{fontSize:9,color:txd,fontWeight:600,whiteSpace:"nowrap"}}>{fmtTS(l.ts)}</span>
-        </div>))}
-        <button onClick={()=>setMainTab("log")} style={{...S.btn("transparent",acc),width:"100%",height:28,fontSize:10,marginTop:4,border:`1px solid ${acc}22`}}>View All Logs</button>
-      </div>)}
+      </div>
     </div>);
   };
 
@@ -917,117 +805,227 @@ function App(){
   const renderProd=pid=>{let pp=getProductParts(pid);if(searchQuery)pp=pp.filter(p=>p.n.toLowerCase().includes(searchQuery.toLowerCase()));const ac=getAsmColors(pid);const cl=pp.filter(p=>p.c.length>1||(!["universal","black","abs","purecrystal","orangecrystal","random","white"].includes(p.c[0]))),uv=pp.filter(p=>p.c.length===1&&["universal","black","abs","purecrystal","orangecrystal","random","white"].includes(p.c[0]));const sc=asmColor[pid]||ac[0]||"";
     const hasBom=Object.keys(bomProfiles[pid]||{}).length>0;
     return(<div>
-      <div style={{...S.crd,border:`1.5px solid ${acc}30`,padding:"10px 10px",background:dark?`linear-gradient(135deg,#131620 0%,${acc}08 100%)`:`linear-gradient(135deg,#fff 0%,${acc}06 100%)`}}>
-        <div style={{fontSize:14,fontWeight:900,marginBottom:8,display:"flex",alignItems:"center",gap:5}}>⚙️ Assemble {PRODUCTS[pid]?.name}
-          {!hasBom&&<span style={{fontSize:9,background:wnC+"22",color:wnC,padding:"1px 5px",borderRadius:5,fontWeight:800}}>No BOM</span>}
+      <div style={{...S.crd,border:`1.5px solid ${acc}30`,padding:"12px 14px",background:dark?`linear-gradient(135deg,#131620 0%,${acc}08 100%)`:`linear-gradient(135deg,#fff 0%,${acc}06 100%)`}}>
+        <div style={{fontSize:15,fontWeight:900,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>⚙️ Assemble {PRODUCTS[pid]?.name}
+          {!hasBom&&<span style={{fontSize:9,background:wnC+"22",color:wnC,padding:"2px 6px",borderRadius:6,fontWeight:800}}>No BOM</span>}
         </div>
         {ac.length>0?(<>
-          <div style={{display:"flex",gap:4,marginBottom:8,flexWrap:"wrap"}}>{ac.map(c=>(<button key={c} onClick={()=>setAsmColor(a=>({...a,[pid]:c}))} style={{...S.btn(sc===c?CLR[c]?.bg||"#888":"transparent",sc===c?"#fff":CLR[c]?.bg||"#888"),border:`2px solid ${CLR[c]?.bg||"#888"}`,padding:"6px 9px",fontSize:12,flex:1,minWidth:45,boxShadow:sc===c?`0 3px 10px ${CLR[c]?.gw||"transparent"}`:"none"}}>{CLR[c]?.lb||c}</button>))}</div>
-          <div style={{display:"flex",gap:5,marginBottom:8}}><input type="number" inputMode="numeric" placeholder="Qty..." value={asmQty[pid]||""} onChange={e=>setAsmQty(q=>({...q,[pid]:e.target.value}))} style={{...S.inp,flex:1,fontSize:14,height:36,fontWeight:800,textAlign:"center"}}/><button onClick={()=>doAssemble(pid)} style={{...S.btn(okC),fontSize:13,padding:"0 16px",height:36,borderRadius:8}}>✅ Make</button></div>
-          <div style={{display:"flex",gap:4}}>{ac.map(c=>{const mx=calcMax(pid,c,stock);return(<div key={c} style={{flex:1,background:dark?"#0e1019":"#f5f6f9",borderRadius:7,padding:"6px",textAlign:"center",border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}><div style={{fontSize:18,fontWeight:900,color:CLR[c]?.bg||"#888"}}>{mx}</div><div style={{fontSize:8,fontWeight:800,color:txd,marginTop:1}}>max {CLR[c]?.lb||c}</div></div>)})}</div>
-        </>):(<div style={{textAlign:"center",color:txd,fontSize:11,padding:6}}>{hasBom?"All BOM profiles need valid color mappings.":"Create BOM recipes in Settings → BOM."}</div>)}
+          <div style={{display:"flex",gap:5,marginBottom:10,flexWrap:"wrap"}}>{ac.map(c=>(<button key={c} onClick={()=>setAsmColor(a=>({...a,[pid]:c}))} style={{...S.btn(sc===c?CLR[c]?.bg||"#888":"transparent",sc===c?"#fff":CLR[c]?.bg||"#888"),border:`2px solid ${CLR[c]?.bg||"#888"}`,padding:"7px 10px",fontSize:12,flex:1,minWidth:50,boxShadow:sc===c?`0 3px 12px ${CLR[c]?.gw||"transparent"}`:"none"}}>{CLR[c]?.lb||c}</button>))}</div>
+          <div style={{display:"flex",gap:6,marginBottom:10}}><input type="number" inputMode="numeric" placeholder="Qty..." value={asmQty[pid]||""} onChange={e=>setAsmQty(q=>({...q,[pid]:e.target.value}))} style={{...S.inp,flex:1,fontSize:15,height:38,fontWeight:800,textAlign:"center"}}/><button onClick={()=>doAssemble(pid)} style={{...S.btn(okC),fontSize:14,padding:"0 18px",height:38,borderRadius:10}}>✅ Make</button></div>
+          <div style={{display:"flex",gap:6}}>{ac.map(c=>{const mx=calcMax(pid,c,stock);return(<div key={c} style={{flex:1,background:dark?"#0e1019":"#f5f6f9",borderRadius:8,padding:"7px 8px",textAlign:"center",border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}><div style={{fontSize:20,fontWeight:900,color:CLR[c]?.bg||"#888"}}>{mx}</div><div style={{fontSize:9,fontWeight:800,color:txd,marginTop:1}}>max {CLR[c]?.lb||c}</div></div>)})}</div>
+        </>):(<div style={{textAlign:"center",color:txd,fontSize:12,padding:8}}>{hasBom?"All BOM profiles need valid color mappings.":"Create BOM recipes in the BOM tab to enable assembly."}</div>)}
       </div>
-      {cl.length>0&&<div style={{padding:"6px 8px 2px",fontSize:10,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:.8}}>Colored ({cl.length})</div>}
+      {cl.length>0&&<div style={{padding:"8px 10px 2px",fontSize:11,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1}}>Colored ({cl.length})</div>}
       {cl.map(p=><PartRow key={p.id} part={p} {...prp}/>)}
-      {uv.length>0&&<div style={{padding:"6px 8px 2px",fontSize:10,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:.8}}>Fixed Color ({uv.length})</div>}
+      {uv.length>0&&<div style={{padding:"8px 10px 2px",fontSize:11,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1}}>Fixed Color ({uv.length})</div>}
       {uv.map(p=><PartRow key={p.id} part={p} {...prp}/>)}
-      {pp.length===0&&<div style={{...S.crd,textAlign:"center",color:txd,padding:10,fontSize:12}}>{searchQuery?`No match "${searchQuery}"`:"No parts. Add in Settings → Parts."}</div>}
-      <div style={{padding:"8px 8px 12px"}}><div style={{fontSize:10,fontWeight:900,color:txd,textTransform:"uppercase",marginBottom:3,letterSpacing:.8}}>📝 {PRODUCTS[pid]?.name} Notes</div><textarea rows="3" placeholder="Notes..." value={productNotes[pid]||""} onChange={e=>handlePN(pid,e.target.value)} style={{...S.inp,minHeight:50,resize:"vertical",lineHeight:1.4,fontSize:12}}/></div>
+      {pp.length===0&&<div style={{...S.crd,textAlign:"center",color:txd,padding:12,fontSize:13}}>{searchQuery?`No match "${searchQuery}"`:"No parts. Add in Settings → Parts."}</div>}
+      <div style={{padding:"10px 10px 16px"}}><div style={{fontSize:11,fontWeight:900,color:txd,textTransform:"uppercase",marginBottom:4,letterSpacing:1}}>📝 {PRODUCTS[pid]?.name} Notes</div><textarea rows="8" placeholder="Notes..." value={productNotes[pid]||""} onChange={e=>handlePN(pid,e.target.value)} style={{...S.inp,minHeight:120,resize:"vertical",lineHeight:1.5,fontSize:13}}/></div>
     </div>);
   };
 
-  const renderCross=()=>{let cp=CROSS;if(searchQuery)cp=cp.filter(p=>p.n.toLowerCase().includes(searchQuery.toLowerCase()));return(<div><div style={{padding:"8px 8px 3px",fontSize:14,fontWeight:900}}>🔗 Cross Parts</div>{cp.map(p=><PartRow key={p.id} part={p} {...prp}/>)}{cp.length===0&&<div style={{...S.crd,textAlign:"center",color:txd,padding:10,fontSize:12}}>No cross-parts</div>}<div style={{padding:"8px 8px 12px"}}><textarea rows="3" placeholder="Notes..." value={productNotes["cross"]||""} onChange={e=>handlePN("cross",e.target.value)} style={{...S.inp,minHeight:50,resize:"vertical",lineHeight:1.4,fontSize:12}}/></div></div>)};
+  const renderCross=()=>{let cp=CROSS;if(searchQuery)cp=cp.filter(p=>p.n.toLowerCase().includes(searchQuery.toLowerCase()));return(<div><div style={{padding:"10px 10px 4px",fontSize:15,fontWeight:900}}>🔗 Cross Parts</div>{cp.map(p=><PartRow key={p.id} part={p} {...prp}/>)}{cp.length===0&&<div style={{...S.crd,textAlign:"center",color:txd,padding:12,fontSize:13}}>No cross-parts</div>}<div style={{padding:"10px 10px 16px"}}><textarea rows="8" placeholder="Notes..." value={productNotes["cross"]||""} onChange={e=>handlePN("cross",e.target.value)} style={{...S.inp,minHeight:120,resize:"vertical",lineHeight:1.5,fontSize:13}}/></div></div>)};
 
-  // ═══ RENDER: STOCK TAB ═══
+  // ═══ RENDER: STOCK TAB (with verify toggle) ═══
   const renderStock=()=>{const pk=Object.keys(PRODUCTS);const pr=stockFilter==="all"?[...pk,"cross"]:[stockFilter];
     const tp=allParts.length,tc=allParts.filter(p=>confirmed[p.id]).length,pct=tp?Math.round(tc/tp*100):0;
     return(<div>
-      <div style={{padding:"8px 8px 3px",fontSize:14,fontWeight:900,display:"flex",justifyContent:"space-between",alignItems:"center"}}>📦 Stock
-        <button onClick={()=>setStockVerify(!stockVerify)} style={{...S.bSm(stockVerify?okC+"22":dark?"#1a1d2e":"#eee",stockVerify?okC:txd),border:`1px solid ${stockVerify?okC:cb}`,fontSize:10}}>✅ Verify {stockVerify&&`${pct}%`}</button>
+      <div style={{padding:"10px 10px 4px",fontSize:15,fontWeight:900,display:"flex",justifyContent:"space-between",alignItems:"center"}}>📦 Stock
+        <button onClick={()=>setStockVerify(!stockVerify)} style={{...S.bSm(stockVerify?okC+"22":dark?"#1a1d2e":"#eee",stockVerify?okC:txd),border:`1px solid ${stockVerify?okC:cb}`,fontSize:11}}>✅ Verify {stockVerify&&`${pct}%`}</button>
       </div>
-      {stockVerify&&(<div style={{...S.crd,padding:"8px 10px"}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:11,fontWeight:900}}>Progress</span><span style={{fontSize:13,fontWeight:900,color:pct===100?okC:pct>50?wnC:txd}}>{pct}%</span></div><div style={{height:5,borderRadius:3,background:dark?"#1a1d2a":"#e8eaef",overflow:"hidden"}}><div style={{width:`${pct}%`,height:"100%",borderRadius:3,background:pct===100?okC:pct>50?wnC:acc,transition:"width .4s"}}/></div><div style={{fontSize:9,color:txd,marginTop:3,fontWeight:700,display:"flex",justifyContent:"space-between"}}><span>{tc}/{tp}</span><div style={{display:"flex",gap:3}}><button onClick={resetConfirm} style={{...S.bSm("transparent",wnC),border:`1px solid ${wnC}44`,fontSize:9}}>🔄</button><button onClick={confirmAll} style={{...S.bSm(okC),fontSize:9}}>✅ All</button></div></div></div>)}
-      <div style={{display:"flex",gap:3,padding:"0 6px 6px",overflowX:"auto"}}>{["all",...pk].map(f=>(<button key={f} onClick={()=>setStockFilter(f)} style={{...S.btn(stockFilter===f?acc:"transparent",stockFilter===f?"#fff":txd),padding:"3px 8px",fontSize:11,border:`1px solid ${stockFilter===f?acc:cb}`,whiteSpace:"nowrap"}}>{f==="all"?"All":PRODUCTS[f]?.name||f}</button>))}</div>
-      {pr.map(pid=>{let pts=pid==="cross"?CROSS:PARTS.filter(p=>p.p===pid);if(searchQuery)pts=pts.filter(p=>p.n.toLowerCase().includes(searchQuery.toLowerCase()));if(!pts.length)return null;return(<div key={pid}><div style={{padding:"4px 8px 2px",fontSize:10,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:.8}}>{pid==="cross"?"🔗 Cross":(PRODUCTS[pid]?.icon||"")+" "+(PRODUCTS[pid]?.name||pid)} ({pts.length})</div>{pts.map(p=><PartRow key={p.id} part={p} showProduct={stockFilter==="all"} showConfirm={stockVerify} {...prp}/>)}</div>)})}
+      {stockVerify&&(<div style={{...S.crd,padding:"10px 14px"}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:12,fontWeight:900}}>Progress</span><span style={{fontSize:14,fontWeight:900,color:pct===100?okC:pct>50?wnC:txd}}>{pct}%</span></div><div style={{height:6,borderRadius:3,background:dark?"#1a1d2a":"#e8eaef",overflow:"hidden"}}><div style={{width:`${pct}%`,height:"100%",borderRadius:3,background:pct===100?okC:pct>50?wnC:acc,transition:"width .4s"}}/></div><div style={{fontSize:10,color:txd,marginTop:4,fontWeight:700,display:"flex",justifyContent:"space-between"}}><span>{tc}/{tp}</span><div style={{display:"flex",gap:4}}><button onClick={resetConfirm} style={{...S.bSm("transparent",wnC),border:`1px solid ${wnC}44`,fontSize:10}}>🔄</button><button onClick={confirmAll} style={{...S.bSm(okC),fontSize:10}}>✅ All</button></div></div></div>)}
+      <div style={{display:"flex",gap:4,padding:"0 8px 8px",overflowX:"auto"}}>{["all",...pk].map(f=>(<button key={f} onClick={()=>setStockFilter(f)} style={{...S.btn(stockFilter===f?acc:"transparent",stockFilter===f?"#fff":txd),padding:"4px 10px",fontSize:12,border:`1px solid ${stockFilter===f?acc:cb}`,whiteSpace:"nowrap"}}>{f==="all"?"All":PRODUCTS[f]?.name||f}</button>))}</div>
+      {pr.map(pid=>{let pts=pid==="cross"?CROSS:PARTS.filter(p=>p.p===pid);if(searchQuery)pts=pts.filter(p=>p.n.toLowerCase().includes(searchQuery.toLowerCase()));if(!pts.length)return null;return(<div key={pid}><div style={{padding:"6px 10px 2px",fontSize:11,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1}}>{pid==="cross"?"🔗 Cross":(PRODUCTS[pid]?.icon||"")+" "+(PRODUCTS[pid]?.name||pid)} ({pts.length})</div>{pts.map(p=><PartRow key={p.id} part={p} showProduct={stockFilter==="all"} showConfirm={stockVerify} {...prp}/>)}</div>)})}
     </div>)};
 
+  // ═══ RENDER: BOM TAB (NEW) ═══
+  const renderBom=()=>{
+    const pid=bomTab;
+    const pp=getProductParts(pid);
+    const profiles=bomProfiles[pid]||{};
+    const profileKeys=Object.keys(profiles);
+
+    return(<div>
+      <div style={{fontSize:11,color:txd,fontWeight:700,marginBottom:8}}>Define which color each part uses per variant of {PRODUCTS[pid]?.name}.</div>
+
+      {/* Production Planning Summary */}
+      {profileKeys.length>0&&(<div style={{...S.crd,padding:"12px 14px",border:`1.5px solid ${acc}30`,background:dark?`linear-gradient(135deg,#131620 0%,${okC}06 100%)`:`linear-gradient(135deg,#fff 0%,${okC}06 100%)`}}>
+        <div style={{fontSize:13,fontWeight:900,marginBottom:8}}>🏭 Production Capacity — {PRODUCTS[pid]?.name}</div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {profileKeys.map(vk=>{
+            const mx=calcMax(pid,vk,stock);
+            return(<div key={vk} style={{flex:1,minWidth:70,background:dark?"#0e1019":"#f5f6f9",borderRadius:8,padding:"8px",textAlign:"center",border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
+              <CBadge color={vk} CLR={CLR} size={11}/>
+              <div style={{fontSize:22,fontWeight:900,color:mx>0?okC:dnC,marginTop:4}}>{mx}</div>
+              <div style={{fontSize:9,fontWeight:800,color:txd}}>can make</div>
+            </div>);
+          })}
+        </div>
+      </div>)}
+
+      {/* Add Variant Button */}
+      <div style={{padding:"4px 8px 8px"}}>
+        <button onClick={()=>{setShowBomModal(false);setBomEditing({pid,variantKey:"",profile:null})}} style={{...S.btn(acc),width:"100%",height:40,borderRadius:10,fontSize:13}}>+ Create Variant Recipe</button>
+      </div>
+
+      {/* Variant Profiles */}
+      {profileKeys.map(vk=>{
+        const prof=profiles[vk];
+        const isExp=bomExpanded[`${pid}_${vk}`];
+        const mx=calcMax(pid,vk,stock);
+        // Find bottleneck part
+        let bottleneck=null,bottleneckQty=Infinity;
+        pp.forEach(p=>{
+          const mc=prof[p.id];
+          if(mc){const av=Math.floor((stock[p.id]?.[mc]||0)/(p.per||1));if(av<bottleneckQty){bottleneckQty=av;bottleneck=p}}
+        });
+
+        return(<div key={vk} style={{...S.crd,padding:"12px 14px",border:`1.5px solid ${CLR[vk]?.bg||"#888"}30`}}>
+          <div onClick={()=>setBomExpanded(e=>({...e,[`${pid}_${vk}`]:!isExp}))} style={{cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <CBadge color={vk} CLR={CLR} size={13}/>
+              <span style={{fontWeight:900,fontSize:15}}>{PRODUCTS[pid]?.name}</span>
+              <span style={{fontSize:18,fontWeight:900,color:mx>0?okC:dnC}}>{mx}</span>
+            </div>
+            <span style={{fontSize:16,color:txd,transform:isExp?"rotate(90deg)":"none",transition:"transform .2s"}}>›</span>
+          </div>
+
+          {isExp&&(<div style={{marginTop:10}}>
+            {/* Parts list */}
+            {pp.map(p=>{
+              const mc=prof[p.id]||"?";
+              const stk=stock[p.id]?.[mc]||0;
+              const isBottle=p===bottleneck;
+              return(<div key={p.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 8px",marginBottom:2,background:dark?"#0e1019":"#f5f6f9",borderRadius:6,border:isBottle?`1.5px solid ${dnC}44`:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
+                <div style={{flex:1}}>
+                  <span style={{fontWeight:800,fontSize:12}}>{p.n}</span>
+                  {p.products&&<span style={{fontSize:8,background:acc+"22",color:acc,padding:"1px 4px",borderRadius:3,fontWeight:800,marginLeft:4}}>CROSS</span>}
+                  {isBottle&&<span style={{fontSize:8,background:dnC+"22",color:dnC,padding:"1px 4px",borderRadius:3,fontWeight:800,marginLeft:4}}>BOTTLENECK</span>}
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <CBadge color={mc} CLR={CLR} size={9}/>
+                  <span style={{fontSize:12,fontWeight:900,color:stk<=threshold?dnC:okC,minWidth:30,textAlign:"right"}}>{stk}</span>
+                </div>
+              </div>);
+            })}
+
+            {/* Actions */}
+            <div style={{display:"flex",gap:6,marginTop:8}}>
+              <button onClick={()=>{setShowBomModal(false);setBomEditing({pid,variantKey:vk,profile:prof})}} style={{...S.btn(acc),flex:1,height:36,fontSize:12,borderRadius:8}}>✏️ Edit</button>
+              <button onClick={()=>{if(window.confirm(`Delete ${CLR[vk]?.lb} ${PRODUCTS[pid]?.name} recipe?`))deleteBomProfile(pid,vk)}} style={{...S.btn("transparent",dnC),border:`1.5px solid ${dnC}44`,flex:1,height:36,fontSize:12,borderRadius:8}}>🗑️ Delete</button>
+            </div>
+          </div>)}
+        </div>);
+      })}
+
+      {profileKeys.length===0&&<div style={{...S.crd,textAlign:"center",color:txd,padding:16,fontSize:13}}>No recipes yet. Create one above to define which color each part uses.</div>}
+    </div>);
+  };
+
   // ═══ RENDER: LOG TAB ═══
-  const renderLog=()=>{const fl=logFilter==="all"?logs:logs.filter(l=>l.p===logFilter);return(<div><div style={{padding:"8px 8px 3px",fontSize:14,fontWeight:900}}>📋 Log</div><div style={{display:"flex",gap:3,padding:"0 6px 6px",overflowX:"auto"}}>{["all",...Object.keys(PRODUCTS),"cross"].map(f=>(<button key={f} onClick={()=>setLogFilter(f)} style={{...S.btn(logFilter===f?acc:"transparent",logFilter===f?"#fff":txd),padding:"3px 8px",fontSize:11,border:`1px solid ${logFilter===f?acc:cb}`,whiteSpace:"nowrap"}}>{f==="all"?"All":f==="cross"?"Cross":PRODUCTS[f]?.name||f}</button>))}</div>{!fl.length&&<div style={{...S.crd,textAlign:"center",color:txd,padding:12,fontSize:12}}>No activity</div>}{fl.slice(0,100).map(l=>(<div key={l.id} style={{...S.crd,padding:"7px 9px",marginBottom:1}}><div style={{display:"flex",alignItems:"flex-start",gap:6}}><div style={{paddingTop:4,flexShrink:0}}><div style={{width:7,height:7,borderRadius:"50%",background:l.a==="assemble"?okC:l.a==="adjust"||l.a==="stock_edit"?acc:wnC}}/></div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap",marginBottom:1}}><span style={S.tag(l.a==="assemble"?okC:l.a==="adjust"||l.a==="stock_edit"?acc:wnC)}>{l.a}</span>{l.p&&<span style={{fontSize:9,color:txd,fontWeight:800}}>{PRODUCTS[l.p]?.name||l.p}</span>}</div>{editLogId===l.id?(<div style={{marginTop:3}}><input value={editLogText} onChange={e=>setEditLogText(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")saveLogEdit(l.id);if(e.key==="Escape")setEditLogId(null)}} autoFocus style={{...S.inp,marginBottom:3,fontSize:12}}/><div style={{display:"flex",gap:3}}><button onClick={()=>saveLogEdit(l.id)} style={{...S.bSm(okC),flex:1}}>Save</button><button onClick={()=>setEditLogId(null)} style={{...S.bSm(dark?"#444":"#ccc",tx),flex:1}}>Cancel</button></div></div>):(<div style={{fontSize:12,fontWeight:800,lineHeight:1.3}}>{l.d}</div>)}<div style={{fontSize:9,color:txd,marginTop:1,fontWeight:600}}>{fmtTS(l.ts)}</div></div><div style={{display:"flex",flexDirection:"column",gap:3}}><button onClick={()=>{setEditLogId(l.id);setEditLogText(l.d)}} style={S.iBtn}>✏️</button><button onClick={()=>deleteLog(l.id)} style={{...S.iBtn,color:dnC+"aa"}}>🗑️</button></div></div></div>))}{logs.length>0&&<div style={{padding:"6px 8px"}}><button onClick={clearLogs} style={{...S.btn("transparent",dnC),border:`1px solid ${dnC}`,width:"100%",fontSize:11}}>🗑️ Clear All</button></div>}</div>)};
+  const renderLog=()=>{const fl=logFilter==="all"?logs:logs.filter(l=>l.p===logFilter);return(<div><div style={{padding:"10px 10px 4px",fontSize:15,fontWeight:900}}>📋 Log</div><div style={{display:"flex",gap:4,padding:"0 8px 8px",overflowX:"auto"}}>{["all",...Object.keys(PRODUCTS),"cross"].map(f=>(<button key={f} onClick={()=>setLogFilter(f)} style={{...S.btn(logFilter===f?acc:"transparent",logFilter===f?"#fff":txd),padding:"4px 10px",fontSize:12,border:`1px solid ${logFilter===f?acc:cb}`,whiteSpace:"nowrap"}}>{f==="all"?"All":f==="cross"?"Cross":PRODUCTS[f]?.name||f}</button>))}</div>{!fl.length&&<div style={{...S.crd,textAlign:"center",color:txd,padding:16,fontSize:13}}>No activity</div>}{fl.slice(0,100).map(l=>(<div key={l.id} style={{...S.crd,padding:"10px 12px",marginBottom:2}}><div style={{display:"flex",alignItems:"flex-start",gap:8}}><div style={{paddingTop:5,flexShrink:0}}><div style={{width:8,height:8,borderRadius:"50%",background:l.a==="assemble"?okC:l.a==="adjust"||l.a==="stock_edit"?acc:wnC}}/></div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:2}}><span style={S.tag(l.a==="assemble"?okC:l.a==="adjust"||l.a==="stock_edit"?acc:wnC)}>{l.a}</span>{l.p&&<span style={{fontSize:10,color:txd,fontWeight:800}}>{PRODUCTS[l.p]?.name||l.p}</span>}</div>{editLogId===l.id?(<div style={{marginTop:4}}><input value={editLogText} onChange={e=>setEditLogText(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")saveLogEdit(l.id);if(e.key==="Escape")setEditLogId(null)}} autoFocus style={{...S.inp,marginBottom:4,fontSize:13}}/><div style={{display:"flex",gap:4}}><button onClick={()=>saveLogEdit(l.id)} style={{...S.bSm(okC),flex:1}}>Save</button><button onClick={()=>setEditLogId(null)} style={{...S.bSm(dark?"#444":"#ccc",tx),flex:1}}>Cancel</button></div></div>):(<div style={{fontSize:13,fontWeight:800,lineHeight:1.3}}>{l.d}</div>)}<div style={{fontSize:10,color:txd,marginTop:2,fontWeight:600}}>{fmtTS(l.ts)}</div></div><div style={{display:"flex",flexDirection:"column",gap:4}}><button onClick={()=>{setEditLogId(l.id);setEditLogText(l.d)}} style={S.iBtn}>✏️</button><button onClick={()=>deleteLog(l.id)} style={{...S.iBtn,color:dnC+"aa"}}>🗑️</button></div></div></div>))}{logs.length>0&&<div style={{padding:"8px 10px"}}><button onClick={clearLogs} style={{...S.btn("transparent",dnC),border:`1px solid ${dnC}`,width:"100%",fontSize:12}}>🗑️ Clear All</button></div>}</div>)};
 
   // ═══ RENDER: SETTINGS ═══
-  const renderSettings=()=>(<div>
-    <div style={{padding:"8px 8px 3px",fontSize:14,fontWeight:900}}>⚙️ Settings</div>
-    <div style={{padding:"6px 8px 2px",fontSize:9,fontWeight:900,color:acc,letterSpacing:.5}}>🔧 MANAGE</div>
-    <div style={S.crd}><div style={{display:"flex",flexDirection:"column",gap:5}}>
-      {[{k:"bom",i:"📋",l:"BOM / Recipes",d:Object.values(bomProfiles).reduce((s,p)=>s+Object.keys(p).length,0)+" recipes"},{k:"colors",i:"🎨",l:"Colors",d:Object.keys(CLR).length+" items"},{k:"products",i:"📦",l:"Products",d:Object.keys(PRODUCTS).length+" items"},{k:"parts",i:"🔩",l:"Parts",d:PARTS.length+" items"},{k:"links",i:"🔗",l:"Cross-Links",d:CROSS.length+" items"}].map(m=>(<button key={m.k} onClick={()=>setShowManage(m.k)} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:dark?"#0e1019":"#f5f6f9",borderRadius:8,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`,cursor:"pointer",textAlign:"left",fontFamily:"'Nunito',sans-serif"}}><span style={{fontSize:18}}>{m.i}</span><div style={{flex:1}}><div style={{fontWeight:900,fontSize:13,color:tx}}>{m.l}</div><div style={{fontSize:10,color:txd,fontWeight:700}}>{m.d}</div></div><span style={{color:txd,fontSize:14}}>›</span></button>))}
+  const renderSettings=()=>{
+    const bomCount=Object.keys(PRODUCTS).reduce((s,pid)=>s+Object.keys(bomProfiles[pid]||{}).length,0);
+    return(<div>
+    <div style={{padding:"12px 12px 4px",fontSize:15,fontWeight:900}}>⚙️ Settings</div>
+    <div style={{padding:"8px 10px 2px",fontSize:10,fontWeight:900,color:acc,letterSpacing:.5}}>🔧 MANAGE</div>
+    <div style={S.crd}><div style={{display:"flex",flexDirection:"column",gap:6}}>
+      {[{k:"bom",i:"📋",l:"BOM / Recipes",d:`${Object.keys(PRODUCTS).length} products · ${bomCount} variants`},{k:"colors",i:"🎨",l:"Colors",d:`${Object.keys(CLR).length} colors`},{k:"products",i:"📦",l:"Products",d:`${Object.keys(PRODUCTS).length} products`},{k:"parts",i:"🔩",l:"Parts",d:`${PARTS.length} parts`},{k:"links",i:"🔗",l:"Cross-Links",d:`${CROSS.length} links`}].map(m=>(<button key={m.k} onClick={()=>m.k==="bom"?setShowBomModal(true):setShowManage(m.k)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:dark?"#0e1019":"#f5f6f9",borderRadius:10,border:`1px solid ${m.k==="bom"?(acc+"44"):(dark?"#1a1d2e":"#eceef3")}`,cursor:"pointer",textAlign:"left",fontFamily:"'Nunito',sans-serif"}}><span style={{fontSize:20}}>{m.i}</span><div style={{flex:1}}><div style={{fontWeight:900,fontSize:14,color:tx}}>{m.l}</div><div style={{fontSize:11,color:txd,fontWeight:700}}>{m.d}</div></div><span style={{color:txd,fontSize:16}}>›</span></button>))}
     </div></div>
-    <div style={S.crd}><label style={S.lbl}>Cloud Sync</label><button onClick={pullCloud} disabled={syncing} style={{...S.btn(acc),width:"100%",height:34,borderRadius:8}}>{syncing?"Syncing...":"⬇️ Pull from Cloud"}</button>{lastSync&&<div style={{fontSize:9,color:txd,marginTop:4,textAlign:"center",fontWeight:700}}>Last: {fmtTS(lastSync.getTime())}</div>}</div>
-    <div style={S.crd}><label style={S.lbl}>Export</label><div style={{display:"flex",gap:5}}><button onClick={doExportJSON} style={{...S.btn(acc),flex:1,height:34,borderRadius:8}}>📥 JSON</button><button onClick={doExportCSV} style={{...S.btn(okC),flex:1,height:34,borderRadius:8}}>📊 CSV</button></div></div>
-    <div style={S.crd}><label style={S.lbl}>Import</label><label style={{...S.btn(wnC),cursor:"pointer",width:"100%",height:34,justifyContent:"center",borderRadius:8}}>📤 Import JSON<input type="file" accept=".json" onChange={handleImport} style={{display:"none"}}/></label></div>
-    <div style={S.crd}><label style={S.lbl}>Low Stock Threshold</label><input type="number" inputMode="numeric" value={threshold} onChange={e=>{const v=parseInt(e.target.value)||0;setThreshold(v);markDirty({threshold:v})}} style={{...S.inp,fontSize:15,fontWeight:900,textAlign:"center",height:38}}/></div>
-    <div style={S.crd}><label style={S.lbl}>Product Thresholds</label><div style={{display:"flex",flexDirection:"column",gap:4}}>{[...Object.keys(PRODUCTS),"cross"].map(p=>(<div key={p} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:dark?"#0e1019":"#f5f6f9",padding:"6px 8px",borderRadius:7,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}><div style={{fontSize:12,fontWeight:800}}>{p==="cross"?"🔗 Cross":`${PRODUCTS[p]?.icon||""} ${PRODUCTS[p]?.name||p}`}</div><input type="number" placeholder={`${threshold}`} value={productThresholds[p]!==undefined?productThresholds[p]:""} onChange={e=>{const v=e.target.value===""?undefined:parseInt(e.target.value);const n={...productThresholds};if(v===undefined)delete n[p];else n[p]=v;setProductThresholds(n);markDirty({productThresholds:n})}} style={{...S.inp,width:64,fontSize:12,fontWeight:800,textAlign:"center",height:28,padding:"2px"}}/></div>))}</div></div>
-    <div style={S.crd}><label style={S.lbl}>Notes</label><textarea rows={3} value={notes} onChange={e=>handleNotes(e.target.value)} placeholder="Shared notes..." style={{...S.inp,minHeight:50,resize:"vertical",lineHeight:1.4,borderRadius:8,fontSize:12}}/></div>
-    <div style={S.crd}><label style={S.lbl}>Theme</label><div style={{display:"flex",gap:5}}><button onClick={()=>setDark(true)} style={{...S.btn(dark?acc:cb,dark?"#fff":tx),flex:1,height:34,borderRadius:8}}>🌙 Dark</button><button onClick={()=>setDark(false)} style={{...S.btn(!dark?acc:cb,!dark?"#fff":tx),flex:1,height:34,borderRadius:8}}>☀️ Light</button></div></div>
-    <div style={S.crd}><label style={S.lbl}>Data</label><span style={{fontSize:11,fontWeight:800}}>{dataSize} KB</span></div>
-    <div style={{padding:"8px 8px 2px",fontSize:9,fontWeight:900,color:dnC}}>DANGER ZONE</div>
-    <div style={{...S.crd,borderColor:dnC+"33"}}><button onClick={()=>setShowClear(true)} style={{...S.btn(dnC),width:"100%",height:36,borderRadius:8}}>🚨 Clear All Data</button></div>
+    <div style={{padding:"8px 10px 2px",fontSize:10,fontWeight:900,color:acc,letterSpacing:.5}}>☁️ SYNC & DATA</div>
+    <div style={S.crd}><button onClick={pullCloud} disabled={syncing} style={{...S.btn(acc),width:"100%",height:38,borderRadius:10}}>{syncing?"Syncing...":"⬇️ Pull from Cloud"}</button>{lastSync&&<div style={{fontSize:10,color:txd,marginTop:5,textAlign:"center",fontWeight:700}}>Last: {fmtTS(lastSync.getTime())}</div>}</div>
+    <div style={S.crd}><div style={{display:"flex",gap:6}}><button onClick={doExportJSON} style={{...S.btn(acc),flex:1,height:38,borderRadius:10}}>📥 JSON</button><button onClick={doExportCSV} style={{...S.btn(okC),flex:1,height:38,borderRadius:10}}>📊 CSV</button></div></div>
+    <div style={S.crd}><label style={{...S.btn(wnC),cursor:"pointer",width:"100%",height:38,justifyContent:"center",borderRadius:10}}>📤 Import JSON<input type="file" accept=".json" onChange={handleImport} style={{display:"none"}}/></label></div>
+    <div style={{padding:"8px 10px 2px",fontSize:10,fontWeight:900,color:acc,letterSpacing:.5}}>⚙️ THRESHOLDS</div>
+    <div style={S.crd}><label style={S.lbl}>Low Stock Threshold</label><input type="number" inputMode="numeric" value={threshold} onChange={e=>{const v=parseInt(e.target.value)||0;setThreshold(v);markDirty({threshold:v})}} style={{...S.inp,fontSize:16,fontWeight:900,textAlign:"center",height:42}}/></div>
+    <div style={S.crd}><label style={S.lbl}>Product Thresholds</label><div style={{display:"flex",flexDirection:"column",gap:6}}>{[...Object.keys(PRODUCTS),"cross"].map(p=>(<div key={p} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:dark?"#0e1019":"#f5f6f9",padding:"8px 10px",borderRadius:8,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}><div style={{fontSize:13,fontWeight:800}}>{p==="cross"?"🔗 Cross":`${PRODUCTS[p]?.icon||""} ${PRODUCTS[p]?.name||p}`}</div><input type="number" placeholder={`${threshold}`} value={productThresholds[p]!==undefined?productThresholds[p]:""} onChange={e=>{const v=e.target.value===""?undefined:parseInt(e.target.value);const n={...productThresholds};if(v===undefined)delete n[p];else n[p]=v;setProductThresholds(n);markDirty({productThresholds:n})}} style={{...S.inp,width:72,fontSize:13,fontWeight:800,textAlign:"center",height:30,padding:"2px"}}/></div>))}</div></div>
+    <div style={S.crd}><label style={S.lbl}>Notes</label><textarea rows={6} value={notes} onChange={e=>handleNotes(e.target.value)} placeholder="Shared notes..." style={{...S.inp,minHeight:80,resize:"vertical",lineHeight:1.5,borderRadius:10}}/></div>
+    <div style={S.crd}><label style={S.lbl}>Theme</label><div style={{display:"flex",gap:6}}><button onClick={()=>setDark(true)} style={{...S.btn(dark?acc:cb,dark?"#fff":tx),flex:1,height:38,borderRadius:10}}>🌙 Dark</button><button onClick={()=>setDark(false)} style={{...S.btn(!dark?acc:cb,!dark?"#fff":tx),flex:1,height:38,borderRadius:10}}>☀️ Light</button></div></div>
+    <div style={S.crd}><label style={S.lbl}>Data</label><span style={{fontSize:12,fontWeight:800}}>{dataSize} KB</span></div>
+    {/* Product Config Save/Load */}
+    <div style={{padding:"12px 12px 2px",fontSize:10,fontWeight:900,color:okC}}>💾 PRODUCT CONFIG</div>
+    <div style={{...S.crd,borderColor:okC+"33"}}>
+      <div style={{fontSize:11,color:txd,fontWeight:700,marginBottom:8,lineHeight:1.4}}>Save/load BOM, colors, products, parts, cross-links. Does NOT include stock numbers or logs.</div>
+      <div style={{display:"flex",gap:6}}><button onClick={saveConfig} style={{...S.btn(okC),flex:1,height:40,borderRadius:10}}>💾 Save Config</button><label style={{...S.btn(acc),flex:1,height:40,borderRadius:10,cursor:"pointer",justifyContent:"center"}}>📂 Load Config<input type="file" accept=".json" onChange={handleLoadConfig} style={{display:"none"}}/></label></div>
+    </div>
+    {/* Reset Numbers */}
+    <div style={{padding:"12px 12px 2px",fontSize:10,fontWeight:900,color:wnC}}>🔄 RESET</div>
+    <div style={{...S.crd,borderColor:wnC+"33"}}>
+      <div style={{fontSize:11,color:txd,fontWeight:700,marginBottom:8,lineHeight:1.4}}>Zeros all stock and clears logs. Your product setup (BOM, colors, parts) stays intact.</div>
+      <button onClick={()=>setShowClear("reset")} style={{...S.btn("transparent",wnC),border:`2px solid ${wnC}`,width:"100%",height:40,borderRadius:10}}>🔄 Reset Numbers Only</button>
+    </div>
+    {/* Danger Zone */}
+    <div style={{padding:"12px 12px 2px",fontSize:10,fontWeight:900,color:dnC}}>🚨 DANGER ZONE</div>
+    <div style={{...S.crd,borderColor:dnC+"33"}}><button onClick={()=>setShowClear("all")} style={{...S.btn(dnC),width:"100%",height:40,borderRadius:10}}>🚨 Clear All Data</button></div>
   </div>);
+  };
 
   // ═══ MAIN RENDER ═══
   return(<div style={S.app}>
     {toast&&<div className={toastAnim==="enter"?"toast-enter":"toast-exit"} style={S.toast}>{toast.msg}</div>}
-    {showClear&&(<div className="modal-bg" style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.8)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:16,backdropFilter:"blur(6px)"}}><div className="modal-card" style={{...S.crd,margin:0,maxWidth:280,width:"100%",textAlign:"center",padding:"20px 16px",borderRadius:14}}><div style={{fontSize:40,marginBottom:6}}>⚠️</div><h2 style={{marginTop:0,color:dnC,fontSize:18,fontWeight:900}}>CLEAR ALL?</h2><p style={{color:txd,marginBottom:14,fontSize:12,fontWeight:700}}>Deletes stock, logs, notes.</p><div style={{display:"flex",flexDirection:"column",gap:6}}><button onClick={()=>setShowClear(false)} style={{...S.btn(okC),width:"100%",height:38,fontSize:13,borderRadius:8}}>✅ Cancel</button><button onClick={()=>{wipeData();setShowClear(false)}} style={{...S.btn("transparent",dnC),border:`2px solid ${dnC}`,width:"100%",height:38,fontSize:13,borderRadius:8}}>🚨 Delete</button></div></div></div>)}
-    {confirmAsm&&(<div className="modal-bg" style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.75)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16,backdropFilter:"blur(6px)"}}><div className="modal-card" style={{...S.crd,margin:0,maxWidth:320,width:"100%",textAlign:"center",padding:"18px 14px",borderRadius:14}}>
-      <div style={{fontSize:36,marginBottom:6}}>{PRODUCTS[confirmAsm.pid]?.icon}</div>
-      <div style={{fontSize:15,fontWeight:900,marginBottom:4}}>Confirm Assembly</div>
-      <div style={{fontSize:12,color:txd,marginBottom:8,lineHeight:1.3}}>Make <strong style={{color:CLR[confirmAsm.color]?.bg}}>{confirmAsm.qty} {CLR[confirmAsm.color]?.lb}</strong> {PRODUCTS[confirmAsm.pid]?.name}{confirmAsm.qty>1?"s":""}?{calcMax(confirmAsm.pid,confirmAsm.color,stock)<confirmAsm.qty&&(<div style={{color:wnC,fontSize:10,marginTop:3,fontWeight:900}}>⚠️ Parts will go below 0</div>)}</div>
-      <div style={{textAlign:"left",maxHeight:"28vh",overflowY:"auto",marginBottom:10}}>
+    {showClear&&(<div className="modal-bg" style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.8)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(6px)"}}><div className="modal-card" style={{...S.crd,margin:0,maxWidth:300,width:"100%",textAlign:"center",padding:"24px 20px",borderRadius:16}}><div style={{fontSize:44,marginBottom:8}}>{showClear==="reset"?"🔄":"⚠️"}</div><h2 style={{marginTop:0,color:showClear==="reset"?wnC:dnC,fontSize:20,fontWeight:900}}>{showClear==="reset"?"RESET NUMBERS?":"CLEAR ALL?"}</h2><p style={{color:txd,marginBottom:18,fontSize:13,fontWeight:700}}>{showClear==="reset"?"Zeros stock & clears logs. Product config stays.":"Deletes stock, logs, notes, AND config."}</p><div style={{display:"flex",flexDirection:"column",gap:8}}><button onClick={()=>setShowClear(null)} style={{...S.btn(okC),width:"100%",height:42,fontSize:14,borderRadius:10}}>✅ Cancel</button><button onClick={()=>{if(showClear==="reset"){resetNumbers()}else{wipeData()}setShowClear(null)}} style={{...S.btn("transparent",showClear==="reset"?wnC:dnC),border:`2px solid ${showClear==="reset"?wnC:dnC}`,width:"100%",height:42,fontSize:14,borderRadius:10}}>{showClear==="reset"?"🔄 Reset":"🚨 Delete"}</button></div></div></div>)}
+    {confirmAsm&&(<div className="modal-bg" style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.75)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(6px)"}}><div className="modal-card" style={{...S.crd,margin:0,maxWidth:340,width:"100%",textAlign:"center",padding:"24px 20px",borderRadius:16}}>
+      <div style={{fontSize:40,marginBottom:8}}>{PRODUCTS[confirmAsm.pid]?.icon}</div>
+      <div style={{fontSize:17,fontWeight:900,marginBottom:6}}>Confirm Assembly</div>
+      <div style={{fontSize:13,color:txd,marginBottom:10,lineHeight:1.4}}>Make <strong style={{color:CLR[confirmAsm.color]?.bg}}>{confirmAsm.qty} {CLR[confirmAsm.color]?.lb}</strong> {PRODUCTS[confirmAsm.pid]?.name}{confirmAsm.qty>1?"s":""}?{calcMax(confirmAsm.pid,confirmAsm.color,stock)<confirmAsm.qty&&(<div style={{color:wnC,fontSize:11,marginTop:4,fontWeight:900}}>⚠️ Parts will go below 0</div>)}</div>
+      {/* Show what will be deducted */}
+      <div style={{textAlign:"left",maxHeight:"30vh",overflowY:"auto",marginBottom:12}}>
         {getProductParts(confirmAsm.pid).map(p=>{
           const mc=getPartColorForAsm(p,confirmAsm.color,confirmAsm.pid);
           if(!mc)return null;
           const cur=stock[p.id]?.[mc]||0;
           const aft=Math.max(0,cur-confirmAsm.qty*(p.per||1));
-          return(<div key={p.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"2px 4px",fontSize:10,fontWeight:700}}>
+          return(<div key={p.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"3px 6px",fontSize:11,fontWeight:700}}>
             <span style={{flex:1}}>{p.n}</span>
-            <CBadge color={mc} CLR={CLR} size={7}/>
-            <span style={{minWidth:50,textAlign:"right",color:aft<=0?dnC:txd}}>{cur}→{aft}</span>
+            <CBadge color={mc} CLR={CLR} size={8}/>
+            <span style={{minWidth:60,textAlign:"right",color:aft<=0?dnC:txd}}>{cur}→{aft}</span>
           </div>);
         })}
       </div>
-      <div style={{display:"flex",gap:6}}><button onClick={()=>setConfirmAsm(null)} style={{...S.btn(dark?"#252836":"#e0e3ea",tx),flex:1,height:36,fontSize:12,borderRadius:8}}>Cancel</button><button onClick={confirmDoAssemble} style={{...S.btn(okC),flex:1,height:36,fontSize:12,borderRadius:8}}>Confirm</button></div>
+      <div style={{display:"flex",gap:8}}><button onClick={()=>setConfirmAsm(null)} style={{...S.btn(dark?"#252836":"#e0e3ea",tx),flex:1,height:40,fontSize:13,borderRadius:10}}>Cancel</button><button onClick={confirmDoAssemble} style={{...S.btn(okC),flex:1,height:40,fontSize:13,borderRadius:10}}>Confirm</button></div>
     </div></div>)}
 
     {/* BOM Editor Modal */}
-    <Modal show={!!bomEditing} onClose={()=>setBomEditing(null)} title={`📋 ${bomEditing?((bomEditing.variantKey?'Edit':'New')+' Recipe — '+(PRODUCTS[bomEditing.pid]?.name||'')):''}`} theme={theme}>
-      {bomEditing&&<BomEditor pid={bomEditing.pid} variantKey={bomEditing.variantKey} profile={bomEditing.profile} PRODUCTS={PRODUCTS} PARTS={PARTS} CROSS={CROSS} CLR={CLR} onSave={saveBomProfile} onClose={()=>setBomEditing(null)} theme={theme}/>}
+    <Modal show={!!bomEditing} onClose={()=>{setBomEditing(null);setShowBomModal(true)}} title={`📋 ${bomEditing?((bomEditing.variantKey?'Edit':'New')+' Recipe — '+(PRODUCTS[bomEditing.pid]?.name||'')):''}`} theme={theme}>
+      {bomEditing&&<BomEditor pid={bomEditing.pid} variantKey={bomEditing.variantKey} profile={bomEditing.profile} PRODUCTS={PRODUCTS} PARTS={PARTS} CROSS={CROSS} CLR={CLR} onSave={(pid,vk,mapping)=>{saveBomProfile(pid,vk,mapping);setShowBomModal(true)}} onClose={()=>{setBomEditing(null);setShowBomModal(true)}} theme={theme}/>}
+    </Modal>
+
+    {/* BOM Manager Modal (from Settings) */}
+    <Modal show={showBomModal} onClose={()=>setShowBomModal(false)} title="📋 BOM / Recipes" theme={theme}>
+      <div style={{margin:"-8px -8px 0"}}>
+        <div style={{display:"flex",gap:0,overflowX:"auto",borderBottom:`1px solid ${cb}`,marginBottom:10}}>
+          {Object.keys(PRODUCTS).map(pid=>(<button key={pid} onClick={()=>setBomTab(pid)} style={{padding:"8px 10px",whiteSpace:"nowrap",background:"none",border:"none",borderBottom:bomTab===pid?`2.5px solid ${acc}`:"2.5px solid transparent",color:bomTab===pid?acc:txd,fontSize:12,fontWeight:bomTab===pid?900:700,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:13}}>{PRODUCTS[pid].icon}</span>{PRODUCTS[pid].name}</button>))}
+        </div>
+        {renderBom()}
+      </div>
     </Modal>
 
     <Modal show={showManage==="colors"} onClose={()=>setShowManage(null)} title="🎨 Colors" theme={theme}><MgrColors CLR={CLR} onAdd={addColor} onEdit={editColor} onDel={deleteColor} theme={theme} toast={showToast}/></Modal>
     <Modal show={showManage==="products"} onClose={()=>setShowManage(null)} title="📦 Products" theme={theme}><MgrProducts PRODUCTS={PRODUCTS} PARTS={PARTS} onAdd={addProduct} onEdit={editProduct} onDel={deleteProduct} theme={theme} toast={showToast}/></Modal>
     <Modal show={showManage==="parts"} onClose={()=>setShowManage(null)} title="🔩 Parts" theme={theme}><MgrParts PRODUCTS={PRODUCTS} PARTS={PARTS} CLR={CLR} onAdd={addPart} onEdit={editPart} onDel={deletePart} theme={theme} toast={showToast}/></Modal>
     <Modal show={showManage==="links"} onClose={()=>setShowManage(null)} title="🔗 Cross-Links" theme={theme}><MgrCross PRODUCTS={PRODUCTS} CROSS={CROSS} CLR={CLR} onAdd={addCross} onEdit={editCross} onDel={deleteCross} theme={theme} toast={showToast}/></Modal>
-    <Modal show={showManage==="bom"} onClose={()=>setShowManage(null)} title="📋 BOM / Recipes" theme={theme}>
-      <BomPanel PRODUCTS={PRODUCTS} PARTS={PARTS} CROSS={CROSS} CLR={CLR} stock={stock} bomProfiles={bomProfiles} threshold={threshold} calcMax={calcMax} onEdit={e=>{setShowManage(null);setBomEditing(e)}} onDelete={(pid,vk)=>{if(window.confirm(`Delete ${CLR[vk]?.lb} ${PRODUCTS[pid]?.name} recipe?`))deleteBomProfile(pid,vk)}} theme={theme}/>
-    </Modal>
 
     <div style={{background:dark?"#0d0f18ee":"#ffffffee",borderBottom:`1px solid ${dark?"#1a1d2e":"#e0e3ea"}`,position:"sticky",top:0,zIndex:95,backdropFilter:"blur(16px)"}}>
-      <div style={{padding:"5px 10px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${dark?"#ffffff08":"#00000008"}`}}>
-        <div style={{display:"flex",alignItems:"center"}}><SDot syncing={syncing} dirty={dirty} okC={okC} wnC={wnC} acc={acc}/><span style={{fontSize:10,fontWeight:800,color:syncing?acc:dirty?wnC:okC,letterSpacing:.4}}>{syncing?"SYNCING":dirty?"SAVING":"SYNCED"}</span></div>
-        <button onClick={()=>pushCloud()} disabled={syncing||!dirty} style={{...S.bSm(dirty?wnC+"22":acc+"15",dirty?wnC:acc),padding:"3px 10px",fontSize:10,opacity:(!dirty&&!syncing)?.4:1,border:`1px solid ${dirty?wnC+"44":acc+"33"}`,borderRadius:6}}>{syncing?"⏳":"☁️"} {dirty?"Save":"Synced"}</button>
+      <div style={{padding:"6px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${dark?"#ffffff08":"#00000008"}`}}>
+        <div style={{display:"flex",alignItems:"center"}}><SDot syncing={syncing} dirty={dirty} okC={okC} wnC={wnC} acc={acc}/><span style={{fontSize:11,fontWeight:800,color:syncing?acc:dirty?wnC:okC,letterSpacing:.5}}>{syncing?"SYNCING":dirty?"SAVING":"SYNCED"}</span></div>
+        <button onClick={()=>pushCloud()} disabled={syncing||!dirty} style={{...S.bSm(dirty?wnC+"22":acc+"15",dirty?wnC:acc),padding:"4px 12px",fontSize:11,opacity:(!dirty&&!syncing)?.4:1,border:`1px solid ${dirty?wnC+"44":acc+"33"}`,borderRadius:8}}>{syncing?"⏳":"☁️"} {dirty?"Save":"Synced"}</button>
       </div>
-      <div style={{padding:"6px 10px 5px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div style={{fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:5}}>🏭 Little Star</div>
-        <button onClick={()=>setDark(!dark)} style={{background:dark?"#ffffff10":"#0000000a",border:"none",color:txd,fontSize:14,cursor:"pointer",padding:"3px 6px",borderRadius:6}}>{dark?"☀️":"🌙"}</button>
+      <div style={{padding:"8px 12px 6px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{fontSize:17,fontWeight:900,display:"flex",alignItems:"center",gap:6}}>🏭 Little Star</div>
+        <button onClick={()=>setDark(!dark)} style={{background:dark?"#ffffff10":"#0000000a",border:"none",color:txd,fontSize:16,cursor:"pointer",padding:"4px 8px",borderRadius:8}}>{dark?"☀️":"🌙"}</button>
       </div>
     </div>
 
     {/* Sub-nav for Assembly */}
-    {mainTab==="products"&&(<div style={S.subNav}>{Object.keys(PRODUCTS).map(pid=>(<button key={pid} onClick={()=>{setProdTab(pid);setSearchQuery("")}} style={S.subNI(prodTab===pid)}><span style={{fontSize:12}}>{PRODUCTS[pid].icon}</span>{PRODUCTS[pid].name}</button>))}<button onClick={()=>{setProdTab("cross");setSearchQuery("")}} style={S.subNI(prodTab==="cross")}><span style={{fontSize:12}}>🔗</span>Cross</button></div>)}
+    {mainTab==="products"&&(<div style={S.subNav}>{Object.keys(PRODUCTS).map(pid=>(<button key={pid} onClick={()=>{setProdTab(pid);setSearchQuery("")}} style={S.subNI(prodTab===pid)}><span style={{fontSize:13}}>{PRODUCTS[pid].icon}</span>{PRODUCTS[pid].name}</button>))}<button onClick={()=>{setProdTab("cross");setSearchQuery("")}} style={S.subNI(prodTab==="cross")}><span style={{fontSize:13}}>🔗</span>Cross</button></div>)}
 
     {/* Search bar */}
-    {["products","stock"].includes(mainTab)&&(<div style={{padding:"6px 8px 0",position:"relative"}}><input type="text" placeholder="Search parts..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} style={{...S.inp,height:34,fontSize:12,fontWeight:700,paddingLeft:30}}/><span style={{position:"absolute",left:16,top:"50%",transform:"translateY(-30%)",fontSize:12,opacity:.5,pointerEvents:"none"}}>🔍</span>{searchQuery&&<span onClick={()=>setSearchQuery("")} style={{position:"absolute",right:16,top:"50%",transform:"translateY(-30%)",fontSize:14,cursor:"pointer",opacity:.5}}>✕</span>}</div>)}
+    {["products","stock"].includes(mainTab)&&(<div style={{padding:"8px 10px 0",position:"relative"}}><input type="text" placeholder="Search parts..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} style={{...S.inp,height:38,fontSize:13,fontWeight:700,paddingLeft:34}}/><span style={{position:"absolute",left:20,top:"50%",transform:"translateY(-30%)",fontSize:14,opacity:.5,pointerEvents:"none"}}>🔍</span>{searchQuery&&<span onClick={()=>setSearchQuery("")} style={{position:"absolute",right:20,top:"50%",transform:"translateY(-30%)",fontSize:16,cursor:"pointer",opacity:.5}}>✕</span>}</div>)}
 
-    <div style={{paddingBottom:6}}>
-      {mainTab==="dashboard"&&renderDashboard()}
+    <div style={{paddingBottom:8}}>
+      {mainTab==="dash"&&renderDash()}
       {mainTab==="products"&&prodTab!=="cross"&&PRODUCTS[prodTab]&&renderProd(prodTab)}
       {mainTab==="products"&&prodTab==="cross"&&renderCross()}
       {mainTab==="stock"&&renderStock()}
@@ -1035,7 +1033,7 @@ function App(){
       {mainTab==="settings"&&renderSettings()}
     </div>
 
-    <nav style={S.nav}>{[{k:"dashboard",i:"🏠",l:"Home"},{k:"products",i:"🏭",l:"Assembly"},{k:"stock",i:"📦",l:"Stock"},{k:"log",i:"📝",l:"Logs"},{k:"settings",i:"⚙️",l:"Settings"}].map(n=>(<button key={n.k} onClick={()=>{setMainTab(n.k);setSearchQuery("")}} style={S.nI(mainTab===n.k)}>{mainTab===n.k&&<div style={{position:"absolute",top:-1,left:"25%",right:"25%",height:2.5,borderRadius:2,background:acc,boxShadow:`0 0 8px ${acc}66`}}/>}<span style={{fontSize:18,marginBottom:1}}>{n.i}</span>{n.l}</button>))}</nav>
+    <nav style={S.nav}>{[{k:"dash",i:"📊",l:"Dash"},{k:"products",i:"🏭",l:"Assembly"},{k:"stock",i:"📦",l:"Stock"},{k:"log",i:"📝",l:"Logs"},{k:"settings",i:"⚙️",l:"Settings"}].map(n=>(<button key={n.k} onClick={()=>{setMainTab(n.k);setSearchQuery("")}} style={S.nI(mainTab===n.k)}>{mainTab===n.k&&<div style={{position:"absolute",top:-1,left:"25%",right:"25%",height:2.5,borderRadius:2,background:acc,boxShadow:`0 0 8px ${acc}66`}}/>}<span style={{fontSize:17,marginBottom:1}}>{n.i}</span>{n.l}</button>))}</nav>
   </div>);
 }
 
