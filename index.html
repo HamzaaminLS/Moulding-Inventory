@@ -41,25 +41,122 @@
 <script type="text/babel">
 const{useState,useEffect,useCallback,useRef,useMemo}=React;
 
-// --- FIREBASE CONFIGURATION ---
-// IMPORTANT: If saving fails, change this URL to: "https://mouldingv2-default-rtdb.asia-southeast1.firebasedatabase.app"
 const FB_URL="https://mouldingv2-default-rtdb.asia-southeast1.firebasedatabase.app";
 const FB_PATH="/inventory/main";
 const STORE_KEY="littlestar-inv-v4";
 const THEME_KEY="littlestar-theme";
 
+// ═══ ALL COLORS FROM EXCEL ═══
 const DEF_COLORS={
-  pink:{bg:"#f472b6",fg:"#fff",lb:"Pink",gw:"rgba(244,114,182,.3)"},
-  blue:{bg:"#60a5fa",fg:"#fff",lb:"Blue",gw:"rgba(96,165,250,.3)"},
+  pink:{bg:"#f472b6",fg:"#fff",lb:"L.Pink",gw:"rgba(244,114,182,.3)"},
+  blue:{bg:"#60a5fa",fg:"#fff",lb:"L.Blue",gw:"rgba(96,165,250,.3)"},
   red:{bg:"#ef4444",fg:"#fff",lb:"Red",gw:"rgba(239,68,68,.3)"},
-  darkblue:{bg:"#1d4ed8",fg:"#fff",lb:"D.Blue",gw:"rgba(29,78,216,.3)"},
+  darkblue:{bg:"#1e40af",fg:"#fff",lb:"D.Blue",gw:"rgba(30,64,175,.3)"},
+  white:{bg:"#e2e8f0",fg:"#334155",lb:"White",gw:"rgba(226,232,240,.3)"},
+  black:{bg:"#1e293b",fg:"#fff",lb:"Black",gw:"rgba(30,41,59,.3)"},
+  seagreen:{bg:"#2dd4bf",fg:"#fff",lb:"Sea Grn",gw:"rgba(45,212,191,.3)"},
+  skyblue:{bg:"#38bdf8",fg:"#fff",lb:"Sky Blue",gw:"rgba(56,189,248,.3)"},
+  orange:{bg:"#fb923c",fg:"#fff",lb:"Orange",gw:"rgba(251,146,60,.3)"},
+  purecrystal:{bg:"#cbd5e1",fg:"#334155",lb:"P.Crystal",gw:"rgba(203,213,225,.3)"},
+  orangecrystal:{bg:"#fdba74",fg:"#334155",lb:"O.Crystal",gw:"rgba(253,186,116,.3)"},
+  yellow:{bg:"#fbbf24",fg:"#334155",lb:"Yellow",gw:"rgba(251,191,36,.3)"},
+  abs:{bg:"#94a3b8",fg:"#fff",lb:"ABS",gw:"rgba(148,163,184,.3)"},
+  random:{bg:"#a78bfa",fg:"#fff",lb:"Random",gw:"rgba(167,139,250,.3)"},
   universal:{bg:"#9ca3af",fg:"#fff",lb:"Univ.",gw:"rgba(156,163,175,.2)"}
 };
-const DEF_PRODUCTS={sprinter:{name:"Sprinter",icon:"\ud83c\udfcd\ufe0f"},stroller:{name:"Stroller",icon:"\ud83d\udc76"},twilight:{name:"Twilight",icon:"\ud83c\udf19"},tolo:{name:"Tolo",icon:"\ud83d\ude97"}};
 
-const DEF_PARTS=[{id:"sp_body",n:"Body",p:"sprinter",c:["pink", "blue"],per:1},{id:"sp_capnip",n:"Cap / Nip1 / Nip2",p:"sprinter",c:["pink", "blue"],per:1},{id:"sp_fwheel",n:"Front Wheel",p:"sprinter",c:["pink", "blue"],per:1},{id:"sp_handlecell",n:"Handle / Cell",p:"sprinter",c:["pink", "blue"],per:1},{id:"sp_bwheel",n:"Back Wheel",p:"sprinter",c:["pink", "blue"],per:1},{id:"sp_madgad",n:"Madgad",p:"sprinter",c:["pink", "blue"],per:1},{id:"sp_wcap",n:"Wheel Cap",p:"sprinter",c:["pink", "blue"],per:1},{id:"sp_takeseat",n:"Take / Seat Ring",p:"sprinter",c:["pink", "blue"],per:1},{id:"sp_mutthi",n:"Mutthi",p:"sprinter",c:["pink", "blue"],per:1},{id:"sp_wring",n:"Wheel Ring",p:"sprinter",c:["pink", "blue"],per:1},{id:"sp_chashmahr",n:"Chashma / Handle Ring",p:"sprinter",c:["pink", "blue"],per:1},{id:"sp_take",n:"Take",p:"sprinter",c:["pink", "blue"],per:1},{id:"sp_smirror",n:"Side Mirror",p:"sprinter",c:["pink", "blue"],per:1},{id:"sp_seat",n:"Seat",p:"sprinter",c:["pink", "blue"],per:1},{id:"sp_silencer",n:"Silencer",p:"sprinter",c:["pink", "blue"],per:1},{id:"sp_mirror",n:"Mirror",p:"sprinter",c:["pink", "blue"],per:1},{id:"sp_shade",n:"Shade",p:"sprinter",c:["pink", "blue"],per:1},{id:"sp_pedal",n:"Pedal",p:"sprinter",c:["pink", "blue"],per:1},{id:"sp_btncrys",n:"Button / SM (Crystal)",p:"sprinter",c:["universal"],per:1},{id:"sp_hlglass",n:"Headlight Glass (Crystal)",p:"sprinter",c:["universal"],per:1},{id:"sp_chokri",n:"Chokri",p:"sprinter",c:["universal"],per:1},{id:"sp_chashmaabs",n:"Chashma (ABS)",p:"sprinter",c:["universal"],per:1},{id:"st_body",n:"Body",p:"stroller",c:["pink", "blue", "red"],per:1},{id:"st_footrest",n:"Footrest",p:"stroller",c:["universal"],per:1},{id:"st_wheel",n:"Wheel",p:"stroller",c:["universal"],per:1},{id:"st_arm",n:"Arm",p:"stroller",c:["pink", "blue", "red"],per:1},{id:"st_bumper",n:"Bumper",p:"stroller",c:["pink", "blue", "darkblue"],per:1},{id:"st_take",n:"Take",p:"stroller",c:["pink", "blue", "darkblue"],per:1},{id:"st_bonnet",n:"Bonnet",p:"stroller",c:["pink", "blue", "darkblue"],per:1},{id:"st_wrsq",n:"Wheel Ring Square",p:"stroller",c:["pink", "blue", "darkblue"],per:1},{id:"st_steerring",n:"Steering Ring",p:"stroller",c:["pink", "blue", "red"],per:1},{id:"st_seat",n:"Seat",p:"stroller",c:["pink", "blue", "darkblue"],per:1},{id:"st_steerup",n:"Steering Upper",p:"stroller",c:["pink", "blue", "darkblue"],per:1},{id:"st_steerlow",n:"Steering Lower",p:"stroller",c:["pink", "blue", "darkblue"],per:1},{id:"st_smirror",n:"Side Mirror",p:"stroller",c:["pink", "blue", "darkblue"],per:1},{id:"st_rlcrys",n:"Rearlight / SM (Crystal)",p:"stroller",c:["universal"],per:1},{id:"st_hlglass",n:"Headlight Glass (Crystal)",p:"stroller",c:["universal"],per:1},{id:"st_rearabs",n:"Rear / Exhaust / Logo (ABS)",p:"stroller",c:["universal"],per:1},{id:"st_takepc",n:"Take Piece (3)",p:"stroller",c:["pink", "blue", "darkblue"],per:1},{id:"st_armlockb",n:"Armlock(2) / Bailcha(3)",p:"stroller",c:["pink", "blue", "darkblue"],per:1},{id:"st_hlfabs",n:"HL / Foglight / Radiator (ABS)",p:"stroller",c:["universal"],per:1},{id:"st_bailcha",n:"Bailcha (Misc)",p:"stroller",c:["universal"],per:1},{id:"tw_body",n:"Body",p:"twilight",c:["pink", "blue"],per:1},{id:"tw_wheel",n:"Wheel",p:"twilight",c:["universal"],per:1},{id:"tw_take",n:"Take",p:"twilight",c:["pink", "blue"],per:1},{id:"tw_abc123",n:"Abc 123",p:"twilight",c:["universal"],per:1},{id:"tw_bonnet",n:"Bonnet / LR44 PP",p:"twilight",c:["pink", "blue"],per:1},{id:"tw_steering",n:"Steering",p:"twilight",c:["pink", "blue"],per:1},{id:"tw_seattrunk",n:"Seat / Trunk",p:"twilight",c:["pink", "blue"],per:1},{id:"tw_glasscap",n:"Glasscap / Ring / Punja / Patti / Btn / Tail",p:"twilight",c:["pink", "blue"],per:1},{id:"tw_pipe",n:"Pipe",p:"twilight",c:["universal"],per:1},{id:"tw_abcback",n:"Abc Black Back",p:"twilight",c:["universal"],per:1},{id:"tw_baja",n:"Baja / 2Piece / Kaan",p:"twilight",c:["pink", "blue"],per:1},{id:"tw_wcap",n:"Wheelcap",p:"twilight",c:["pink", "blue"],per:1},{id:"tw_iwcap",n:"Inner Wheelcap",p:"twilight",c:["pink", "blue"],per:1},{id:"tw_petglass",n:"Pet Glass",p:"twilight",c:["universal"],per:1},{id:"to_body",n:"Body",p:"tolo",c:["pink", "blue"],per:1},{id:"to_bonnet",n:"Bonnet",p:"tolo",c:["pink", "blue"],per:1},{id:"to_wheelwc",n:"Wheel / Wheel Cap",p:"tolo",c:["universal"],per:1},{id:"to_seatbump",n:"Seat / Bumper",p:"tolo",c:["pink", "blue"],per:1},{id:"to_take",n:"Take",p:"tolo",c:["pink", "blue"],per:1},{id:"to_wcap",n:"WheelCap",p:"tolo",c:["pink", "blue"],per:1},{id:"to_steering",n:"Steering",p:"tolo",c:["pink", "blue"],per:1},{id:"to_armface",n:"Arm / Arm Holder / Take Face",p:"tolo",c:["pink", "blue"],per:1},{id:"to_hlglass",n:"Headlight Glass",p:"tolo",c:["universal"],per:1},{id:"to_hlinner",n:"HL Inner / Music Piece / Baja Cap",p:"tolo",c:["pink", "blue"],per:1}];
-const DEF_CROSS=[{id:"cx_pipe",n:"Stroller & Tolo Pipe",c:["universal"],per:1,products:["stroller","tolo"]}];
+// ═══ PRODUCTS (now includes Sparkle) ═══
+const DEF_PRODUCTS={sprinter:{name:"Sprinter",icon:"🏍️"},stroller:{name:"Stroller",icon:"👶"},twilight:{name:"Twilight",icon:"🌙"},tolo:{name:"Tolo",icon:"🚗"},sparkle:{name:"Sparkle",icon:"✨"}};
+
+// ═══ PARTS ═══
+const DEF_PARTS=[
+  // --- Sprinter ---
+  {id:"sp_body",n:"Body",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_capnip",n:"Cap / Nip1 / Nip2",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_fwheel",n:"Front Wheel",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_handlecell",n:"Handle / Cell",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_bwheel",n:"Back Wheel",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_madgad",n:"Madgad",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_wcap",n:"Wheel Cap",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_takeseat",n:"Take / Seat Ring",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_mutthi",n:"Mutthi",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_wring",n:"Wheel Ring",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_chashmahr",n:"Chashma / Handle Ring",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_take",n:"Take",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_smirror",n:"Side Mirror",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_seat",n:"Seat",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_silencer",n:"Silencer",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_mirror",n:"Mirror",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_shade",n:"Shade",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_pedal",n:"Pedal",p:"sprinter",c:["pink","blue"],per:1},
+  {id:"sp_btncrys",n:"Button / SM (Crystal)",p:"sprinter",c:["purecrystal"],per:1},
+  {id:"sp_hlglass",n:"Headlight Glass (Crystal)",p:"sprinter",c:["purecrystal"],per:1},
+  {id:"sp_chokri",n:"Chokri",p:"sprinter",c:["white"],per:1},
+  {id:"sp_chashmaabs",n:"Chashma (ABS)",p:"sprinter",c:["abs"],per:1},
+  // --- Stroller ---
+  {id:"st_body",n:"Body",p:"stroller",c:["pink","blue","red"],per:1},
+  {id:"st_footrest",n:"Footrest",p:"stroller",c:["black"],per:1},
+  {id:"st_wheel",n:"Wheel",p:"stroller",c:["black"],per:1},
+  {id:"st_arm",n:"Arm",p:"stroller",c:["pink","blue","red"],per:1},
+  {id:"st_bumper",n:"Bumper",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_take",n:"Take",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_bonnet",n:"Bonnet",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_wrsq",n:"Wheel Ring Square",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_steerring",n:"Steering Ring",p:"stroller",c:["pink","blue","red"],per:1},
+  {id:"st_seat",n:"Seat",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_steerup",n:"Steering Upper",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_steerlow",n:"Steering Lower",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_smirror",n:"Side Mirror",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_rlcrys",n:"Rearlight / SM (Crystal)",p:"stroller",c:["orangecrystal"],per:1},
+  {id:"st_hlglass",n:"Headlight Glass (Crystal)",p:"stroller",c:["purecrystal"],per:1},
+  {id:"st_rearabs",n:"Rear / Exhaust / Logo (ABS)",p:"stroller",c:["abs"],per:1},
+  {id:"st_takepc",n:"Take Piece (3)",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_armlockb",n:"Armlock(2) / Bailcha(3)",p:"stroller",c:["pink","blue","darkblue"],per:1},
+  {id:"st_hlfabs",n:"HL / Foglight / Radiator (ABS)",p:"stroller",c:["abs"],per:1},
+  {id:"st_bailcha",n:"Bailcha (Misc)",p:"stroller",c:["universal"],per:1},
+  // --- Twilight ---
+  {id:"tw_body",n:"Body",p:"twilight",c:["pink","blue"],per:1},
+  {id:"tw_wheel",n:"Wheel",p:"twilight",c:["black"],per:1},
+  {id:"tw_take",n:"Take",p:"twilight",c:["pink","blue"],per:1},
+  {id:"tw_abc123",n:"Abc 123",p:"twilight",c:["random"],per:1},
+  {id:"tw_bonnet",n:"Bonnet / LR44 PP",p:"twilight",c:["pink","blue"],per:1},
+  {id:"tw_steering",n:"Steering",p:"twilight",c:["pink","blue"],per:1},
+  {id:"tw_seattrunk",n:"Seat / Trunk",p:"twilight",c:["pink","blue"],per:1},
+  {id:"tw_glasscap",n:"Glasscap / Ring / Punja / Patti / Btn / Tail",p:"twilight",c:["pink","blue"],per:1},
+  {id:"tw_pipe",n:"Pipe",p:"twilight",c:["black"],per:1},
+  {id:"tw_abcback",n:"Abc Black Back",p:"twilight",c:["black"],per:1},
+  {id:"tw_baja",n:"Baja / 2Piece / Kaan",p:"twilight",c:["pink","blue"],per:1},
+  {id:"tw_wcap",n:"Wheelcap",p:"twilight",c:["pink","blue"],per:1},
+  {id:"tw_iwcap",n:"Inner Wheelcap",p:"twilight",c:["pink","blue"],per:1},
+  {id:"tw_petglass",n:"Pet Glass",p:"twilight",c:["random"],per:1},
+  // --- Tolo ---
+  {id:"to_body",n:"Body",p:"tolo",c:["pink","blue"],per:1},
+  {id:"to_bonnet",n:"Bonnet",p:"tolo",c:["pink","blue"],per:1},
+  {id:"to_wheelwc",n:"Wheel / Wheel Cap",p:"tolo",c:["black"],per:1},
+  {id:"to_seatbump",n:"Seat / Bumper",p:"tolo",c:["pink","blue"],per:1},
+  {id:"to_take",n:"Take",p:"tolo",c:["pink","blue"],per:1},
+  {id:"to_wcap",n:"WheelCap",p:"tolo",c:["pink","blue"],per:1},
+  {id:"to_steering",n:"Steering",p:"tolo",c:["pink","blue"],per:1},
+  {id:"to_armface",n:"Arm / Arm Holder / Take Face",p:"tolo",c:["pink","blue"],per:1},
+  {id:"to_hlglass",n:"Headlight Glass",p:"tolo",c:["purecrystal"],per:1},
+  {id:"to_hlinner",n:"HL Inner / Music Piece / Baja Cap",p:"tolo",c:["pink","blue"],per:1},
+  // --- Sparkle (NEW from Excel) ---
+  {id:"sk_body",n:"Body",p:"sparkle",c:["white"],per:1},
+  {id:"sk_bonnet",n:"Bonnet",p:"sparkle",c:["blue","red","seagreen","orange"],per:1},
+  {id:"sk_wheelwc",n:"Wheel / Wheel Cap",p:"sparkle",c:["blue","red","seagreen","orange"],per:1},
+  {id:"sk_seatbump",n:"Seat / Bumper",p:"sparkle",c:["blue","red","seagreen","orange"],per:1},
+  {id:"sk_take",n:"Take / Take Piece",p:"sparkle",c:["blue","red","seagreen","orange"],per:1},
+  {id:"sk_steering",n:"Steering",p:"sparkle",c:["blue","red","seagreen","orange"],per:1},
+  {id:"sk_hlglass",n:"Headlight Glass",p:"sparkle",c:["orangecrystal"],per:1},
+  {id:"sk_hlinner",n:"HL Inner / Music Piece / Baja",p:"sparkle",c:["blue","red","seagreen","orange"],per:1},
+  {id:"sk_wcap",n:"WheelCap",p:"sparkle",c:["blue","red","seagreen","orange"],per:1}
+];
+
+// Cross parts: pipe shared between stroller, tolo, sparkle
+const DEF_CROSS=[{id:"cx_pipe",n:"Stroller & Tolo & Sparkle Pipe",c:["black"],per:1,products:["stroller","tolo","sparkle"]}];
+
 const DEF_ASM={stroller:{red:{darkblue:"darkblue"}}};
+const DEF_BOM={};
 
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function fmtTS(ts){const d=new Date(ts),dd=String(d.getDate()).padStart(2,"0"),mm=String(d.getMonth()+1).padStart(2,"0"),yy=String(d.getFullYear()).slice(2);let h=d.getHours();const ap=h>=12?"PM":"AM";h=h%12||12;return`${dd}/${mm}/${yy} ${h}:${String(d.getMinutes()).padStart(2,"0")} ${ap}`}
@@ -75,7 +172,7 @@ function SDot({syncing,dirty,okC,wnC,acc}){
 }
 
 function PartRow({part,showProduct,showConfirm,stock,confirmed,editing,editVal,partAdjust,onSetEditing,onSetEditVal,onSetPartAdjust,onSaveStock,onAdjustStock,onToggleConfirm,theme,threshold,productThresholds,CLR,PRODUCTS}){
-  const{dark,tx,txd,acc,okC,dnC,cb,card,S}=theme;
+  const{dark,tx,txd,acc,okC,dnC,wnC,cb,card,S}=theme;
   const s=stock[part.id]||{};const isConf=!!confirmed[part.id];const isCross=!!part.products;
   const prodKey=isCross?"cross":part.p;
   const at=productThresholds[prodKey]!==undefined?productThresholds[prodKey]:threshold;
@@ -185,7 +282,7 @@ function MgrProducts({PRODUCTS,PARTS,onAdd,onEdit,onDel,theme,toast}){
   const[ek,setEk]=useState(null);const[en,setEn]=useState("");const[ei,setEi]=useState("");
   const[cd,setCd]=useState(null);
   return(<div>
-    <div style={{fontSize:12,fontWeight:800,color:txd,marginBottom:8}}>Each product = a tab. Add Sparkle etc here.</div>
+    <div style={{fontSize:12,fontWeight:800,color:txd,marginBottom:8}}>Each product = a tab. Add new products here.</div>
     {Object.entries(PRODUCTS).map(([k,v])=>(<div key={k} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",marginBottom:4,background:dark?"#0e1019":"#f5f6f9",borderRadius:8,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
       <span style={{fontSize:22}}>{v.icon}</span>
       {ek===k?(<div style={{flex:1,display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>
@@ -293,6 +390,106 @@ function MgrCross({PRODUCTS,CROSS,CLR,onAdd,onEdit,onDel,theme,toast}){
   </div>);
 }
 
+// ═══════════════════════════════════════
+// ═══  BOM EDITOR COMPONENT (NEW)  ═══
+// ═══════════════════════════════════════
+function BomEditor({pid,variantKey,profile,PRODUCTS,PARTS,CROSS,CLR,onSave,onClose,theme}){
+  const{dark,tx,txd,acc,okC,dnC,cb,S}=theme;
+  const parts=[...PARTS.filter(p=>p.p===pid),...CROSS.filter(cp=>cp.products&&cp.products.includes(pid))];
+  const allColorKeys=Object.keys(CLR);
+  
+  // Variant color = the "base" color key for this variant
+  const[baseColor,setBaseColor]=useState(variantKey||"");
+  const[mapping,setMapping]=useState(()=>{
+    if(profile)return{...profile};
+    // Auto-fill
+    const m={};
+    parts.forEach(p=>{
+      if(p.c.length===1){m[p.id]=p.c[0]}
+      else if(variantKey&&p.c.includes(variantKey)){m[p.id]=variantKey}
+      else{m[p.id]=p.c[0]||""}
+    });
+    return m;
+  });
+
+  // When base color changes, re-auto-fill parts that match
+  const changeBase=(newBase)=>{
+    setBaseColor(newBase);
+    setMapping(prev=>{
+      const m={...prev};
+      parts.forEach(p=>{
+        if(p.c.length===1){m[p.id]=p.c[0]}
+        else if(p.c.includes(newBase)){m[p.id]=newBase}
+        // Keep existing override if part doesn't have new base
+      });
+      return m;
+    });
+  };
+
+  const setPartColor=(partId,color)=>setMapping(m=>({...m,[partId]:color}));
+
+  // Get variant-eligible colors (colors used by colored parts of this product)
+  const variantColors=useMemo(()=>{
+    const s=new Set();
+    parts.forEach(p=>p.c.forEach(c=>{if(c!=="universal"&&c!=="black"&&c!=="abs"&&c!=="purecrystal"&&c!=="orangecrystal"&&c!=="random"&&c!=="white")s.add(c)}));
+    return[...s];
+  },[parts]);
+
+  const canSave=baseColor&&parts.every(p=>mapping[p.id]);
+
+  return(<div>
+    <div style={{fontSize:12,fontWeight:800,color:txd,marginBottom:10}}>
+      Define which color each part uses for the <strong>{CLR[baseColor]?.lb||baseColor||"?"}</strong> variant of <strong>{PRODUCTS[pid]?.name}</strong>.
+    </div>
+
+    <div style={{marginBottom:14}}>
+      <div style={{fontSize:10,fontWeight:900,color:acc,marginBottom:6}}>VARIANT BASE COLOR</div>
+      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+        {variantColors.map(c=>(<button key={c} onClick={()=>changeBase(c)} style={{...S.btn(baseColor===c?CLR[c]?.bg||"#888":"transparent",baseColor===c?"#fff":CLR[c]?.bg||"#888"),border:`2px solid ${CLR[c]?.bg||"#888"}`,padding:"6px 10px",fontSize:11}}>{CLR[c]?.lb||c}</button>))}
+        {/* Allow custom variant key */}
+        {allColorKeys.filter(c=>!variantColors.includes(c)&&c!=="universal").length>0&&(
+          <select value={variantColors.includes(baseColor)?"":(baseColor||"")} onChange={e=>{if(e.target.value)changeBase(e.target.value)}} style={{...S.inp,width:"auto",height:34,fontSize:11,padding:"4px 8px"}}>
+            <option value="">More...</option>
+            {allColorKeys.filter(c=>!variantColors.includes(c)&&c!=="universal").map(c=>(
+              <option key={c} value={c}>{CLR[c]?.lb||c}</option>
+            ))}
+          </select>
+        )}
+      </div>
+    </div>
+
+    <div style={{fontSize:10,fontWeight:900,color:acc,marginBottom:6}}>PART → COLOR MAPPING</div>
+    <div style={{maxHeight:"45vh",overflowY:"auto",marginBottom:12}}>
+      {parts.map(p=>{
+        const cur=mapping[p.id]||"";
+        const isOverride=cur&&cur!==baseColor&&p.c.length>1&&p.c.includes(baseColor);
+        return(
+          <div key={p.id} style={{padding:"8px 10px",marginBottom:3,background:dark?"#0e1019":"#f5f6f9",borderRadius:8,border:`1px solid ${isOverride?(dnC+"55"):(dark?"#1a1d2e":"#eceef3")}`}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+              <span style={{fontWeight:800,fontSize:12,flex:1}}>{p.n}</span>
+              {p.products&&<span style={{fontSize:9,background:acc+"22",color:acc,padding:"1px 5px",borderRadius:4,fontWeight:800}}>CROSS</span>}
+              {isOverride&&<span style={{fontSize:9,background:dnC+"22",color:dnC,padding:"1px 5px",borderRadius:4,fontWeight:800,marginLeft:4}}>OVERRIDE</span>}
+            </div>
+            <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
+              {p.c.map(c=>(<button key={c} onClick={()=>setPartColor(p.id,c)} style={{
+                ...S.bSm(cur===c?CLR[c]?.bg||"#888":"transparent",cur===c?"#fff":CLR[c]?.bg||"#888"),
+                border:`1.5px solid ${CLR[c]?.bg||"#888"}`,padding:"3px 8px",fontSize:10,
+                opacity:cur===c?1:.6
+              }}>{CLR[c]?.lb||c}</button>))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+
+    <div style={{display:"flex",gap:8}}>
+      <button onClick={onClose} style={{...S.btn(dark?"#252836":"#e0e3ea",tx),flex:1,height:40,borderRadius:10}}>Cancel</button>
+      <button onClick={()=>{if(!canSave)return;onSave(pid,baseColor,mapping)}} disabled={!canSave} style={{...S.btn(okC),flex:1,height:40,borderRadius:10,opacity:canSave?1:.5}}>💾 Save Recipe</button>
+    </div>
+  </div>);
+}
+
+
 // ═══════════════ MAIN APP ═══════════════
 function App(){
   const[dark,setDark]=useState(()=>{const s=localStorage.getItem(THEME_KEY);return s!==null?JSON.parse(s):true});
@@ -302,9 +499,11 @@ function App(){
   const[PARTS,setParts]=useState(DEF_PARTS);
   const[CROSS,setCross]=useState(DEF_CROSS);
   const[asmRules,setAsmRules]=useState(DEF_ASM);
+  const[bomProfiles,setBomProfiles]=useState(DEF_BOM);
   
   const[mainTab,setMainTab]=useState("products");
   const[prodTab,setProdTab]=useState("sprinter");
+  const[bomTab,setBomTab]=useState("sprinter");
   const[stock,setStock]=useState({});
   const[logs,setLogs]=useState([]);
   const[confirmed,setConfirmed]=useState({});
@@ -331,27 +530,68 @@ function App(){
   const[partAdjust,setPartAdjust]=useState({});
   const[searchQuery,setSearchQuery]=useState("");
   const[showManage,setShowManage]=useState(null);
+  const[bomEditing,setBomEditing]=useState(null); // {pid, variantKey, profile}
+  const[bomExpanded,setBomExpanded]=useState({});
+  const[stockVerify,setStockVerify]=useState(false);
 
   const toastTimerRef=useRef(null);const notesRef=useRef(null);const productNotesRef=useRef({});
   const dirtyRef=useRef(false);const modalOpenRef=useRef(false);
-  useEffect(()=>{modalOpenRef.current=!!showManage},[showManage]);
+  useEffect(()=>{modalOpenRef.current=!!showManage||!!bomEditing},[showManage,bomEditing]);
   useEffect(()=>{localStorage.setItem(THEME_KEY,JSON.stringify(dark))},[dark]);
 
   const allParts=useMemo(()=>[...PARTS,...CROSS],[PARTS,CROSS]);
   const getProductParts=useCallback(pid=>[...PARTS.filter(p=>p.p===pid),...CROSS.filter(cp=>cp.products&&cp.products.includes(pid))],[PARTS,CROSS]);
-  const getPartColorForAsm=useCallback((part,color,pid)=>{if(part.c.includes("universal"))return"universal";if(part.c.includes(color))return color;const r=asmRules[pid];if(r&&r[color]){for(const[,to]of Object.entries(r[color])){if(part.c.includes(to))return to}}return null},[asmRules]);
-  const getAsmColors=useCallback(pid=>{const pp=getProductParts(pid);const ac=new Set();pp.forEach(p=>p.c.forEach(c=>{if(c!=="universal")ac.add(c)}));return[...ac].filter(c=>pp.every(p=>getPartColorForAsm(p,c,pid)!==null))},[getProductParts,getPartColorForAsm]);
-  const calcMax=useCallback((pid,color,stk)=>{const pp=getProductParts(pid);let m=Infinity;for(const p of pp){const mp=getPartColorForAsm(p,color,pid);if(!mp)return 0;m=Math.min(m,Math.floor((stk[p.id]?.[mp]||0)/(p.per||1)))}return m===Infinity?0:m},[getProductParts,getPartColorForAsm]);
+  
+  // ═══ BOM-AWARE COLOR RESOLUTION ═══
+  const getPartColorForAsm=useCallback((part,color,pid)=>{
+    // First check BOM profile
+    const bp=bomProfiles[pid]?.[color];
+    if(bp&&bp[part.id])return bp[part.id];
+    // Fallback: original logic
+    if(part.c.length===1)return part.c[0];
+    if(part.c.includes(color))return color;
+    const r=asmRules[pid];
+    if(r&&r[color]){for(const[,to]of Object.entries(r[color])){if(part.c.includes(to))return to}}
+    return null;
+  },[asmRules,bomProfiles]);
+
+  const getAsmColors=useCallback(pid=>{
+    const pp=getProductParts(pid);
+    // If BOM profiles exist, those are the assemblable variants
+    const bpKeys=Object.keys(bomProfiles[pid]||{});
+    if(bpKeys.length>0){
+      // Only allow colors that have complete BOM profiles
+      return bpKeys.filter(c=>{
+        const bp=bomProfiles[pid][c];
+        return pp.every(p=>bp[p.id]&&p.c.includes(bp[p.id]));
+      });
+    }
+    // Fallback: old auto-detect
+    const ac=new Set();
+    pp.forEach(p=>p.c.forEach(c=>{if(c!=="universal"&&c!=="black"&&c!=="abs"&&c!=="purecrystal"&&c!=="orangecrystal"&&c!=="random"&&c!=="white")ac.add(c)}));
+    return[...ac].filter(c=>pp.every(p=>getPartColorForAsm(p,c,pid)!==null));
+  },[getProductParts,getPartColorForAsm,bomProfiles]);
+
+  const calcMax=useCallback((pid,color,stk)=>{
+    const pp=getProductParts(pid);let m=Infinity;
+    for(const p of pp){
+      const mp=getPartColorForAsm(p,color,pid);
+      if(!mp)return 0;
+      m=Math.min(m,Math.floor((stk[p.id]?.[mp]||0)/(p.per||1)));
+    }
+    return m===Infinity?0:m;
+  },[getProductParts,getPartColorForAsm]);
 
   const showToast=useCallback((msg,type="ok")=>{clearTimeout(toastTimerRef.current);setToastAnim("enter");setToast({msg,type});toastTimerRef.current=setTimeout(()=>{setToastAnim("exit");setTimeout(()=>setToast(null),250)},2200)},[]);
 
-  const serialize=useCallback(()=>({stock,logs:logs.slice(0,2000),confirmed,notes,productNotes,productThresholds,threshold,colors:CLR,products:PRODUCTS,parts:PARTS,crossParts:CROSS,asmRules,updatedAt:Date.now()}),[stock,logs,confirmed,notes,productNotes,productThresholds,threshold,CLR,PRODUCTS,PARTS,CROSS,asmRules]);
+  const serialize=useCallback(()=>({stock,logs:logs.slice(0,2000),confirmed,notes,productNotes,productThresholds,threshold,colors:CLR,products:PRODUCTS,parts:PARTS,crossParts:CROSS,asmRules,bomProfiles,updatedAt:Date.now()}),[stock,logs,confirmed,notes,productNotes,productThresholds,threshold,CLR,PRODUCTS,PARTS,CROSS,asmRules,bomProfiles]);
   const serializeRef=useRef(serialize);serializeRef.current=serialize;
 
   const loadData=useCallback((d)=>{
     if(d.colors)setCLR(p=>({...DEF_COLORS,...d.colors}));
     if(d.products)setProducts(d.products);if(d.parts)setParts(d.parts);
     if(d.crossParts!==undefined)setCross(d.crossParts||[]);if(d.asmRules)setAsmRules(d.asmRules||{});
+    if(d.bomProfiles!==undefined)setBomProfiles(d.bomProfiles||{});
     const ap=[...(d.parts||DEF_PARTS),...(d.crossParts||DEF_CROSS)];
     const mg={};ap.forEach(p=>{mg[p.id]={};p.c.forEach(c=>{mg[p.id][c]=0})});
     Object.keys(d.stock||{}).forEach(k=>{if(mg[k]||ap.find(p=>p.id===k))mg[k]={...(mg[k]||{}),...d.stock[k]}});
@@ -367,43 +607,25 @@ function App(){
     setSyncing(true);
     try{
       const r=await fetch(`${FB_URL}${FB_PATH}.json?_t=${Date.now()}`,{cache:"no-store"});
-      if(!r.ok){
-         console.error("Firebase Pull Error:", r.status, await r.text());
-         setSyncing(false); return false;
-      }
+      if(!r.ok){console.error("Pull Error:",r.status);setSyncing(false);return false}
       const d=await r.json();
       if(d&&(d.stock||d.products)){
-        loadData(d);
-        localStorage.setItem(STORE_KEY,JSON.stringify(d));
+        loadData(d);localStorage.setItem(STORE_KEY,JSON.stringify(d));
         setLastSync(new Date());setDirty(false);dirtyRef.current=false;setSyncing(false);return true;
       }
-    }catch(e){console.error("Pull Network Error:",e)}
+    }catch(e){console.error("Pull Error:",e)}
     setSyncing(false);return false;
   },[loadData]);
 
-  // --- FIREBASE PUSH (WITH DEBUGGER) ---
+  // --- FIREBASE PUSH ---
   const pushCloud=useCallback(async data=>{
     setSyncing(true);
     try{
       const payload=data||serializeRef.current();
-      const r=await fetch(`${FB_URL}${FB_PATH}.json`,{
-         method:"PUT",
-         headers:{"Content-Type":"application/json"},
-         body:JSON.stringify(payload)
-      });
-      if(r.ok){
-         localStorage.setItem(STORE_KEY,JSON.stringify(payload));
-         setLastSync(new Date());setDirty(false);dirtyRef.current=false;
-         showToast("☁️ Synced!");
-      } else {
-         const errText = await r.text();
-         console.error("Firebase Save Rejected:", r.status, errText);
-         showToast("Save failed - Check Console","err");
-      }
-    }catch(e){
-      console.error("Save Network Error:", e);
-      showToast("Offline","wrn");
-    }
+      const r=await fetch(`${FB_URL}${FB_PATH}.json`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+      if(r.ok){localStorage.setItem(STORE_KEY,JSON.stringify(payload));setLastSync(new Date());setDirty(false);dirtyRef.current=false;showToast("☁️ Synced!")}
+      else{console.error("Push Error:",r.status,await r.text());showToast("Save failed","err")}
+    }catch(e){console.error("Push Error:",e);showToast("Offline","wrn")}
     setSyncing(false);
   },[showToast]);
 
@@ -413,9 +635,9 @@ function App(){
       notes:ov.notes!==undefined?ov.notes:notes,productNotes:ov.productNotes||productNotes,
       productThresholds:ov.productThresholds||productThresholds,threshold:ov.threshold!==undefined?ov.threshold:threshold,
       colors:ov.colors||CLR,products:ov.products||PRODUCTS,parts:ov.parts||PARTS,crossParts:ov.crossParts||CROSS,
-      asmRules:ov.asmRules||asmRules,updatedAt:Date.now()};
+      asmRules:ov.asmRules||asmRules,bomProfiles:ov.bomProfiles||bomProfiles,updatedAt:Date.now()};
     localStorage.setItem(STORE_KEY,JSON.stringify(d));pushCloud(d);
-  },[stock,logs,confirmed,notes,productNotes,productThresholds,threshold,CLR,PRODUCTS,PARTS,CROSS,asmRules,pushCloud]);
+  },[stock,logs,confirmed,notes,productNotes,productThresholds,threshold,CLR,PRODUCTS,PARTS,CROSS,asmRules,bomProfiles,pushCloud]);
 
   // --- REAL-TIME EVENT SOURCE ---
   useEffect(()=>{
@@ -424,49 +646,20 @@ function App(){
       try{
         es=new EventSource(`${FB_URL}${FB_PATH}.json`);
         es.addEventListener("put",(ev)=>{
-          try{
-            const payload=JSON.parse(ev.data);
-            const d=payload.data;
-            if(!d)return;
-            if(dirtyRef.current)return; 
-            if(payload.path === "/") {
-               if(d.stock || d.products) {
-                  loadData(d);
-                  localStorage.setItem(STORE_KEY,JSON.stringify(d));
-                  setLastSync(new Date());setDirty(false);dirtyRef.current=false;
-               }
-            } else {
-               if(!dirtyRef.current) pullCloud();
-            }
+          try{const payload=JSON.parse(ev.data);const d=payload.data;if(!d)return;if(dirtyRef.current)return;
+            if(payload.path==="/"){if(d.stock||d.products){loadData(d);localStorage.setItem(STORE_KEY,JSON.stringify(d));setLastSync(new Date());setDirty(false);dirtyRef.current=false}}
+            else{if(!dirtyRef.current)pullCloud()}
           }catch(e){}
         });
-        es.addEventListener("patch",(ev)=>{
-          if(!dirtyRef.current) pullCloud();
-        });
-        es.onerror=()=>{
-          es.close();
-          reconnectTimer=setTimeout(connect,3000);
-        };
+        es.addEventListener("patch",()=>{if(!dirtyRef.current)pullCloud()});
+        es.onerror=()=>{es.close();reconnectTimer=setTimeout(connect,3000)};
       }catch(e){reconnectTimer=setTimeout(connect,5000)}
     };
     connect();
-
-    const onWake = () => {
-      if (document.visibilityState === "visible") {
-        if (es && es.readyState !== 1) { 
-          es.close(); pullCloud(); connect();
-        }
-      }
-    };
-    document.addEventListener("visibilitychange", onWake);
-
-    return()=>{
-      if(es)es.close();
-      clearTimeout(reconnectTimer);
-      document.removeEventListener("visibilitychange", onWake);
-    };
-  },[pullCloud, loadData]);
-
+    const onWake=()=>{if(document.visibilityState==="visible"&&es&&es.readyState!==1){es.close();pullCloud();connect()}};
+    document.addEventListener("visibilitychange",onWake);
+    return()=>{if(es)es.close();clearTimeout(reconnectTimer);document.removeEventListener("visibilitychange",onWake)};
+  },[pullCloud,loadData]);
 
   useEffect(()=>{const iv=setInterval(()=>{if(dirtyRef.current&&!modalOpenRef.current)pushCloud()},30000);return()=>clearInterval(iv)},[pushCloud]);
   useEffect(()=>{
@@ -483,7 +676,10 @@ function App(){
   const handleSetPA=useCallback((k,v)=>setPartAdjust(p=>({...p,[k]:v})),[]);
 
   const doAssemble=pid=>{const ac=getAsmColors(pid);const c=asmColor[pid]||ac[0];const q=parseInt(asmQty[pid])||0;if(!c){showToast("No color","err");return}if(q<=0){showToast("Enter qty","err");return}setConfirmAsm({pid,color:c,qty:q})};
-  const confirmDoAssemble=()=>{const{pid,color,qty}=confirmAsm;const pp=getProductParts(pid);const ns={...stock};pp.forEach(p=>{const m=getPartColorForAsm(p,color,pid);if(!m)return;if(!ns[p.id])ns[p.id]={};ns[p.id][m]=Math.max(0,(ns[p.id][m]||0)-qty*(p.per||1))});const nm=PRODUCTS[pid]?.name||pid;const e=mkLog("assemble",`${qty} ${CLR[color]?.lb||color} ${nm}${qty>1?"s":""}`,pid);const nl=[e,...logs].slice(0,2000);setStock(ns);setLogs(nl);setAsmQty(q=>({...q,[pid]:""}));setConfirmAsm(null);markDirty({stock:ns,logs:nl});showToast(`Assembled ${qty} ${CLR[color]?.lb} ${nm}!`)};
+  const confirmDoAssemble=()=>{const{pid,color,qty}=confirmAsm;const pp=getProductParts(pid);const ns={...stock};
+    pp.forEach(p=>{const m=getPartColorForAsm(p,color,pid);if(!m)return;if(!ns[p.id])ns[p.id]={};ns[p.id][m]=Math.max(0,(ns[p.id][m]||0)-qty*(p.per||1))});
+    const nm=PRODUCTS[pid]?.name||pid;const e=mkLog("assemble",`${qty} ${CLR[color]?.lb||color} ${nm}${qty>1?"s":""}`,pid);
+    const nl=[e,...logs].slice(0,2000);setStock(ns);setLogs(nl);setAsmQty(q=>({...q,[pid]:""}));setConfirmAsm(null);markDirty({stock:ns,logs:nl});showToast(`Assembled ${qty} ${CLR[color]?.lb} ${nm}!`)};
 
   const saveStock=(id,c)=>{const v=parseInt(editVal);if(isNaN(v)){showToast("Enter number","err");return}const ns={...stock};if(!ns[id])ns[id]={};const o=ns[id][c]||0;const nv=Math.max(0,v);ns[id]={...ns[id],[c]:nv};const p=allParts.find(x=>x.id===id);const e=mkLog("stock_edit",`${p?.n||id} [${CLR[c]?.lb||c}]: ${o} → ${nv}`,p?.p||"cross");const nl=[e,...logs].slice(0,2000);setStock(ns);setLogs(nl);setEditing(null);setEditVal("");markDirty({stock:ns,logs:nl});showToast("Updated")};
   const adjustStock=(id,c,d)=>{const iv=partAdjust[`${id}_${c}`];const amt=iv?parseInt(iv):Math.abs(d);if(isNaN(amt))return;const ad=d>0?amt:-amt;const ns={...stock};if(!ns[id])ns[id]={};const o=ns[id][c]||0;const nv=Math.max(0,o+ad);ns[id]={...ns[id],[c]:nv};const p=allParts.find(x=>x.id===id);const e=mkLog("adjust",`${p?.n||id} [${CLR[c]?.lb||c}]: ${o} → ${nv} (${nv>o?"+":""}${nv-o})`,p?.p||"cross");const nl=[e,...logs].slice(0,2000);setStock(ns);setLogs(nl);markDirty({stock:ns,logs:nl});setPartAdjust(p=>({...p,[`${id}_${c}`]:""}))};
@@ -501,7 +697,7 @@ function App(){
   const deleteColor=k=>{if(k==="universal")return;const nc={...CLR};delete nc[k];setCLR(nc);markDirty({colors:nc})};
   const addProduct=(k,n,i)=>{const np={...PRODUCTS,[k]:{name:n,icon:i}};setProducts(np);markDirty({products:np});setProdTab(k)};
   const editProduct=(k,n,i)=>{const np={...PRODUCTS,[k]:{...PRODUCTS[k],name:n,icon:i}};setProducts(np);markDirty({products:np})};
-  const deleteProduct=k=>{const np={...PRODUCTS};delete np[k];setProducts(np);const fp=PARTS.filter(p=>p.p!==k);setParts(fp);const fc=CROSS.map(cp=>({...cp,products:(cp.products||[]).filter(x=>x!==k)}));setCross(fc);if(prodTab===k)setProdTab(Object.keys(np)[0]||"");markDirty({products:np,parts:fp,crossParts:fc})};
+  const deleteProduct=k=>{const np={...PRODUCTS};delete np[k];setProducts(np);const fp=PARTS.filter(p=>p.p!==k);setParts(fp);const fc=CROSS.map(cp=>({...cp,products:(cp.products||[]).filter(x=>x!==k)}));setCross(fc);const nb={...bomProfiles};delete nb[k];setBomProfiles(nb);if(prodTab===k)setProdTab(Object.keys(np)[0]||"");markDirty({products:np,parts:fp,crossParts:fc,bomProfiles:nb})};
   const addPart=(n,pid,c,per)=>{const id=`${pid.slice(0,2)}_${genId()}`;const np=[...PARTS,{id,n,p:pid,c,per:per||1}];setParts(np);const ns={...stock};ns[id]={};c.forEach(k=>{ns[id][k]=0});setStock(ns);markDirty({parts:np,stock:ns})};
   const editPart=(id,n,c,per)=>{const np=PARTS.map(p=>p.id===id?{...p,n,c,per:per||1}:p);setParts(np);const ns={...stock};if(!ns[id])ns[id]={};c.forEach(k=>{if(ns[id][k]===undefined)ns[id][k]=0});setStock(ns);markDirty({parts:np,stock:ns})};
   const deletePart=id=>{const np=PARTS.filter(p=>p.id!==id);setParts(np);const ns={...stock};delete ns[id];setStock(ns);markDirty({parts:np,stock:ns})};
@@ -509,33 +705,47 @@ function App(){
   const editCross=(id,n,pids,c,per)=>{const nc=CROSS.map(p=>p.id===id?{...p,n,products:pids,c,per:per||1}:p);setCross(nc);const ns={...stock};if(!ns[id])ns[id]={};c.forEach(k=>{if(ns[id][k]===undefined)ns[id][k]=0});setStock(ns);markDirty({crossParts:nc,stock:ns})};
   const deleteCross=id=>{const nc=CROSS.filter(p=>p.id!==id);setCross(nc);const ns={...stock};delete ns[id];setStock(ns);markDirty({crossParts:nc,stock:ns})};
 
+  // ═══ BOM PROFILE CRUD ═══
+  const saveBomProfile=(pid,variantKey,mapping)=>{
+    const nb={...bomProfiles,[pid]:{...(bomProfiles[pid]||{}),[variantKey]:mapping}};
+    setBomProfiles(nb);markDirty({bomProfiles:nb});setBomEditing(null);showToast(`💾 ${CLR[variantKey]?.lb||variantKey} ${PRODUCTS[pid]?.name} recipe saved!`);
+  };
+  const deleteBomProfile=(pid,variantKey)=>{
+    const nb={...bomProfiles};if(nb[pid]){delete nb[pid][variantKey];if(Object.keys(nb[pid]).length===0)delete nb[pid]}
+    setBomProfiles(nb);markDirty({bomProfiles:nb});showToast("Deleted","wrn");
+  };
+
   const doExportJSON=()=>{const p=serialize();p.exportedAt=new Date().toISOString();dlFile(new Blob([JSON.stringify(p,null,2)],{type:"application/json"}),`littlestar_${new Date().toISOString().slice(0,10)}.json`)};
   const doExportCSV=()=>{let csv="Product,Part,Color,Stock\n";allParts.forEach(p=>{const pr=p.products?"Cross":(PRODUCTS[p.p]?.name||p.p);p.c.forEach(c=>{csv+=`"${pr}","${p.n}","${CLR[c]?.lb||c}",${stock[p.id]?.[c]||0}\n`})});dlFile(new Blob([csv],{type:"text/csv"}),`littlestar_${new Date().toISOString().slice(0,10)}.csv`)};
-  const handleImport=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.stock||d.products){const mg=loadData(d);markDirty({stock:mg,logs:d.logs||[],confirmed:d.confirmed||{},colors:d.colors||CLR,products:d.products||PRODUCTS,parts:d.parts||PARTS,crossParts:d.crossParts||CROSS,asmRules:d.asmRules||asmRules});showToast("Imported!")}else showToast("Invalid","err")}catch(err){showToast("Error","err")}};rd.readAsText(f);e.target.value=""};
+  const handleImport=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.stock||d.products){const mg=loadData(d);markDirty({stock:mg,logs:d.logs||[],confirmed:d.confirmed||{},colors:d.colors||CLR,products:d.products||PRODUCTS,parts:d.parts||PARTS,crossParts:d.crossParts||CROSS,asmRules:d.asmRules||asmRules,bomProfiles:d.bomProfiles||bomProfiles});showToast("Imported!")}else showToast("Invalid","err")}catch(err){showToast("Error","err")}};rd.readAsText(f);e.target.value=""};
   const wipeData=()=>{const es={};allParts.forEach(p=>{es[p.id]={};p.c.forEach(c=>{es[p.id][c]=0})});setStock(es);setLogs([]);setConfirmed({});setNotes("");setProductNotes({});setProductThresholds({});markDirty({stock:es,logs:[],confirmed:{},notes:"",productNotes:{},productThresholds:{}});showToast("Wiped","err")};
   const dataSize=useMemo(()=>(new Blob([JSON.stringify(serialize())]).size/1024).toFixed(1),[serialize]);
 
   const bg=dark?"#0a0c14":"#f0f2f7",card=dark?"#13162088":"#ffffffcc",cb=dark?"#1e2235":"#dfe2ea",tx=dark?"#e8eaf0":"#1a1a2e",txd=dark?"#6b7194":"#7c7f96",acc="#4f8cff",okC="#22c55e",dnC="#ef4444",wnC="#f59e0b";
-  const S={app:{fontFamily:"'Nunito',sans-serif",background:bg,color:tx,minHeight:"100vh",maxWidth:520,margin:"0 auto",paddingBottom:76,fontSize:14,WebkitFontSmoothing:"antialiased"},crd:{background:card,border:`1px solid ${dark?"#1e2235":"#e2e5ec"}`,borderRadius:12,margin:"6px 8px",padding:"10px 12px",backdropFilter:"blur(12px)",boxShadow:dark?"0 2px 12px rgba(0,0,0,.2)":"0 1px 6px rgba(0,0,0,.05)"},btn:(b,c="#fff")=>({background:b,color:c,border:"none",borderRadius:8,padding:"6px 12px",fontWeight:800,fontSize:14,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",gap:4,boxShadow:`0 2px 8px ${b}33`}),bSm:(b,c="#fff")=>({background:b,color:c,border:"none",borderRadius:6,padding:"4px 8px",fontWeight:800,fontSize:12,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center"}),inp:{background:dark?"#0e1019":"#f5f6f9",border:`1.5px solid ${dark?"#252a40":"#dde0e8"}`,borderRadius:8,padding:"7px 10px",color:tx,fontSize:14,fontFamily:"'Nunito',sans-serif",width:"100%",boxSizing:"border-box",outline:"none",transition:"border-color .2s"},lbl:{fontSize:10,fontWeight:900,color:txd,marginBottom:5,display:"block",textTransform:"uppercase",letterSpacing:.8},tag:c=>({display:"inline-block",padding:"3px 8px",borderRadius:10,fontSize:10,fontWeight:800,background:c+"18",color:c}),iBtn:{background:"none",border:"none",color:txd,fontSize:16,cursor:"pointer",padding:"4px 6px",borderRadius:8},nav:{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:520,background:dark?"#0d0f18ee":"#ffffffee",borderTop:`1px solid ${dark?"#1a1d2e":"#e0e3ea"}`,display:"flex",zIndex:100,backdropFilter:"blur(16px)",paddingBottom:"env(safe-area-inset-bottom)"},nI:a=>({flex:1,padding:"8px 0 10px",textAlign:"center",background:"none",border:"none",color:a?acc:txd,fontSize:10,fontWeight:a?900:700,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,position:"relative"}),toast:{position:"fixed",top:16,left:"50%",background:dark?"#1a1d27ee":"#ffffffee",color:toast?.type==="err"?dnC:toast?.type==="wrn"?wnC:okC,padding:"10px 20px",borderRadius:12,fontWeight:800,fontSize:13,zIndex:9999,boxShadow:dark?"0 8px 32px rgba(0,0,0,.5)":"0 8px 32px rgba(0,0,0,.12)",fontFamily:"'Nunito',sans-serif",maxWidth:"88%",textAlign:"center",border:`1.5px solid ${toast?.type==="err"?dnC+"44":toast?.type==="wrn"?wnC+"44":okC+"44"}`,backdropFilter:"blur(12px)"},subNav:{display:"flex",overflowX:"auto",gap:0,background:dark?"#0d0f18ee":"#ffffffee",backdropFilter:"blur(12px)",borderBottom:`1px solid ${dark?"#1a1d2e":"#e0e3ea"}`,position:"sticky",top:0,zIndex:90},subNI:a=>({padding:"10px 14px",whiteSpace:"nowrap",background:"none",border:"none",borderBottom:a?`2.5px solid ${acc}`:"2.5px solid transparent",color:a?acc:txd,fontSize:13,fontWeight:a?900:700,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"flex",alignItems:"center",gap:4})};
+  const S={app:{fontFamily:"'Nunito',sans-serif",background:bg,color:tx,minHeight:"100vh",maxWidth:520,margin:"0 auto",paddingBottom:76,fontSize:14,WebkitFontSmoothing:"antialiased"},crd:{background:card,border:`1px solid ${dark?"#1e2235":"#e2e5ec"}`,borderRadius:12,margin:"6px 8px",padding:"10px 12px",backdropFilter:"blur(12px)",boxShadow:dark?"0 2px 12px rgba(0,0,0,.2)":"0 1px 6px rgba(0,0,0,.05)"},btn:(b,c="#fff")=>({background:b,color:c,border:"none",borderRadius:8,padding:"6px 12px",fontWeight:800,fontSize:14,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",gap:4,boxShadow:`0 2px 8px ${b}33`}),bSm:(b,c="#fff")=>({background:b,color:c,border:"none",borderRadius:6,padding:"4px 8px",fontWeight:800,fontSize:12,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center"}),inp:{background:dark?"#0e1019":"#f5f6f9",border:`1.5px solid ${dark?"#252a40":"#dde0e8"}`,borderRadius:8,padding:"7px 10px",color:tx,fontSize:14,fontFamily:"'Nunito',sans-serif",width:"100%",boxSizing:"border-box",outline:"none",transition:"border-color .2s"},lbl:{fontSize:10,fontWeight:900,color:txd,marginBottom:5,display:"block",textTransform:"uppercase",letterSpacing:.8},tag:c=>({display:"inline-block",padding:"3px 8px",borderRadius:10,fontSize:10,fontWeight:800,background:c+"18",color:c}),iBtn:{background:"none",border:"none",color:txd,fontSize:16,cursor:"pointer",padding:"4px 6px",borderRadius:8},nav:{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:520,background:dark?"#0d0f18ee":"#ffffffee",borderTop:`1px solid ${dark?"#1a1d2e":"#e0e3ea"}`,display:"flex",zIndex:100,backdropFilter:"blur(16px)",paddingBottom:"env(safe-area-inset-bottom)"},nI:a=>({flex:1,padding:"6px 0 8px",textAlign:"center",background:"none",border:"none",color:a?acc:txd,fontSize:9,fontWeight:a?900:700,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:1,position:"relative"}),toast:{position:"fixed",top:16,left:"50%",background:dark?"#1a1d27ee":"#ffffffee",color:toast?.type==="err"?dnC:toast?.type==="wrn"?wnC:okC,padding:"10px 20px",borderRadius:12,fontWeight:800,fontSize:13,zIndex:9999,boxShadow:dark?"0 8px 32px rgba(0,0,0,.5)":"0 8px 32px rgba(0,0,0,.12)",fontFamily:"'Nunito',sans-serif",maxWidth:"88%",textAlign:"center",border:`1.5px solid ${toast?.type==="err"?dnC+"44":toast?.type==="wrn"?wnC+"44":okC+"44"}`,backdropFilter:"blur(12px)"},subNav:{display:"flex",overflowX:"auto",gap:0,background:dark?"#0d0f18ee":"#ffffffee",backdropFilter:"blur(12px)",borderBottom:`1px solid ${dark?"#1a1d2e":"#e0e3ea"}`,position:"sticky",top:0,zIndex:90},subNI:a=>({padding:"10px 12px",whiteSpace:"nowrap",background:"none",border:"none",borderBottom:a?`2.5px solid ${acc}`:"2.5px solid transparent",color:a?acc:txd,fontSize:12,fontWeight:a?900:700,fontFamily:"'Nunito',sans-serif",cursor:"pointer",display:"flex",alignItems:"center",gap:4})};
   const theme={dark,tx,txd,acc,okC,dnC,wnC,cb,card,S};
 
   if(!loaded)return(<div style={{...S.app,display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh"}}><div style={{textAlign:"center"}}><div style={{fontSize:48,marginBottom:12,animation:"pulse 1.5s ease infinite"}}>🏭</div><div style={{fontSize:22,fontWeight:900}}>Little Star</div><div style={{color:txd,marginTop:6,fontSize:12,fontWeight:700}}>Loading...</div></div></div>);
 
   const prp={stock,confirmed,editing,editVal,partAdjust,onSetEditing:setEditing,onSetEditVal:setEditVal,onSetPartAdjust:handleSetPA,onSaveStock:saveStock,onAdjustStock:adjustStock,onToggleConfirm:toggleConfirm,theme,threshold,productThresholds,CLR,PRODUCTS};
 
-  const renderProd=pid=>{let pp=getProductParts(pid);if(searchQuery)pp=pp.filter(p=>p.n.toLowerCase().includes(searchQuery.toLowerCase()));const ac=getAsmColors(pid);const cl=pp.filter(p=>!p.c.includes("universal")),uv=pp.filter(p=>p.c.includes("universal"));const sc=asmColor[pid]||ac[0]||"";
+  // ═══ RENDER: ASSEMBLY TAB ═══
+  const renderProd=pid=>{let pp=getProductParts(pid);if(searchQuery)pp=pp.filter(p=>p.n.toLowerCase().includes(searchQuery.toLowerCase()));const ac=getAsmColors(pid);const cl=pp.filter(p=>p.c.length>1||(!["universal","black","abs","purecrystal","orangecrystal","random","white"].includes(p.c[0]))),uv=pp.filter(p=>p.c.length===1&&["universal","black","abs","purecrystal","orangecrystal","random","white"].includes(p.c[0]));const sc=asmColor[pid]||ac[0]||"";
+    const hasBom=Object.keys(bomProfiles[pid]||{}).length>0;
     return(<div>
       <div style={{...S.crd,border:`1.5px solid ${acc}30`,padding:"12px 14px",background:dark?`linear-gradient(135deg,#131620 0%,${acc}08 100%)`:`linear-gradient(135deg,#fff 0%,${acc}06 100%)`}}>
-        <div style={{fontSize:15,fontWeight:900,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>⚙️ Assemble {PRODUCTS[pid]?.name}</div>
+        <div style={{fontSize:15,fontWeight:900,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>⚙️ Assemble {PRODUCTS[pid]?.name}
+          {!hasBom&&<span style={{fontSize:9,background:wnC+"22",color:wnC,padding:"2px 6px",borderRadius:6,fontWeight:800}}>No BOM</span>}
+        </div>
         {ac.length>0?(<>
           <div style={{display:"flex",gap:5,marginBottom:10,flexWrap:"wrap"}}>{ac.map(c=>(<button key={c} onClick={()=>setAsmColor(a=>({...a,[pid]:c}))} style={{...S.btn(sc===c?CLR[c]?.bg||"#888":"transparent",sc===c?"#fff":CLR[c]?.bg||"#888"),border:`2px solid ${CLR[c]?.bg||"#888"}`,padding:"7px 10px",fontSize:12,flex:1,minWidth:50,boxShadow:sc===c?`0 3px 12px ${CLR[c]?.gw||"transparent"}`:"none"}}>{CLR[c]?.lb||c}</button>))}</div>
           <div style={{display:"flex",gap:6,marginBottom:10}}><input type="number" inputMode="numeric" placeholder="Qty..." value={asmQty[pid]||""} onChange={e=>setAsmQty(q=>({...q,[pid]:e.target.value}))} style={{...S.inp,flex:1,fontSize:15,height:38,fontWeight:800,textAlign:"center"}}/><button onClick={()=>doAssemble(pid)} style={{...S.btn(okC),fontSize:14,padding:"0 18px",height:38,borderRadius:10}}>✅ Make</button></div>
           <div style={{display:"flex",gap:6}}>{ac.map(c=>{const mx=calcMax(pid,c,stock);return(<div key={c} style={{flex:1,background:dark?"#0e1019":"#f5f6f9",borderRadius:8,padding:"7px 8px",textAlign:"center",border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}><div style={{fontSize:20,fontWeight:900,color:CLR[c]?.bg||"#888"}}>{mx}</div><div style={{fontSize:9,fontWeight:800,color:txd,marginTop:1}}>max {CLR[c]?.lb||c}</div></div>)})}</div>
-        </>):(<div style={{textAlign:"center",color:txd,fontSize:12,padding:8}}>Add parts with colors to enable assembly.</div>)}
+        </>):(<div style={{textAlign:"center",color:txd,fontSize:12,padding:8}}>{hasBom?"All BOM profiles need valid color mappings.":"Create BOM recipes in the BOM tab to enable assembly."}</div>)}
       </div>
       {cl.length>0&&<div style={{padding:"8px 10px 2px",fontSize:11,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1}}>Colored ({cl.length})</div>}
       {cl.map(p=><PartRow key={p.id} part={p} {...prp}/>)}
-      {uv.length>0&&<div style={{padding:"8px 10px 2px",fontSize:11,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1}}>Universal ({uv.length})</div>}
+      {uv.length>0&&<div style={{padding:"8px 10px 2px",fontSize:11,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1}}>Fixed Color ({uv.length})</div>}
       {uv.map(p=><PartRow key={p.id} part={p} {...prp}/>)}
       {pp.length===0&&<div style={{...S.crd,textAlign:"center",color:txd,padding:12,fontSize:13}}>{searchQuery?`No match "${searchQuery}"`:"No parts. Add in Settings → Parts."}</div>}
       <div style={{padding:"10px 10px 16px"}}><div style={{fontSize:11,fontWeight:900,color:txd,textTransform:"uppercase",marginBottom:4,letterSpacing:1}}>📝 {PRODUCTS[pid]?.name} Notes</div><textarea rows="8" placeholder="Notes..." value={productNotes[pid]||""} onChange={e=>handlePN(pid,e.target.value)} style={{...S.inp,minHeight:120,resize:"vertical",lineHeight:1.5,fontSize:13}}/></div>
@@ -544,12 +754,107 @@ function App(){
 
   const renderCross=()=>{let cp=CROSS;if(searchQuery)cp=cp.filter(p=>p.n.toLowerCase().includes(searchQuery.toLowerCase()));return(<div><div style={{padding:"10px 10px 4px",fontSize:15,fontWeight:900}}>🔗 Cross Parts</div>{cp.map(p=><PartRow key={p.id} part={p} {...prp}/>)}{cp.length===0&&<div style={{...S.crd,textAlign:"center",color:txd,padding:12,fontSize:13}}>No cross-parts</div>}<div style={{padding:"10px 10px 16px"}}><textarea rows="8" placeholder="Notes..." value={productNotes["cross"]||""} onChange={e=>handlePN("cross",e.target.value)} style={{...S.inp,minHeight:120,resize:"vertical",lineHeight:1.5,fontSize:13}}/></div></div>)};
 
-  const renderStock=()=>{const pk=Object.keys(PRODUCTS);const pr=stockFilter==="all"?[...pk,"cross"]:[stockFilter];return(<div><div style={{padding:"10px 10px 4px",fontSize:15,fontWeight:900}}>📦 Stock</div><div style={{display:"flex",gap:4,padding:"0 8px 8px",overflowX:"auto"}}>{["all",...pk].map(f=>(<button key={f} onClick={()=>setStockFilter(f)} style={{...S.btn(stockFilter===f?acc:"transparent",stockFilter===f?"#fff":txd),padding:"4px 10px",fontSize:12,border:`1px solid ${stockFilter===f?acc:cb}`,whiteSpace:"nowrap"}}>{f==="all"?"All":PRODUCTS[f]?.name||f}</button>))}</div>{pr.map(pid=>{let pts=pid==="cross"?CROSS:PARTS.filter(p=>p.p===pid);if(searchQuery)pts=pts.filter(p=>p.n.toLowerCase().includes(searchQuery.toLowerCase()));if(!pts.length)return null;return(<div key={pid}><div style={{padding:"6px 10px 2px",fontSize:11,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1}}>{pid==="cross"?"🔗 Cross":(PRODUCTS[pid]?.icon||"")+" "+(PRODUCTS[pid]?.name||pid)} ({pts.length})</div>{pts.map(p=><PartRow key={p.id} part={p} showProduct={stockFilter==="all"} {...prp}/>)}</div>)})}</div>)};
+  // ═══ RENDER: STOCK TAB (with verify toggle) ═══
+  const renderStock=()=>{const pk=Object.keys(PRODUCTS);const pr=stockFilter==="all"?[...pk,"cross"]:[stockFilter];
+    const tp=allParts.length,tc=allParts.filter(p=>confirmed[p.id]).length,pct=tp?Math.round(tc/tp*100):0;
+    return(<div>
+      <div style={{padding:"10px 10px 4px",fontSize:15,fontWeight:900,display:"flex",justifyContent:"space-between",alignItems:"center"}}>📦 Stock
+        <button onClick={()=>setStockVerify(!stockVerify)} style={{...S.bSm(stockVerify?okC+"22":dark?"#1a1d2e":"#eee",stockVerify?okC:txd),border:`1px solid ${stockVerify?okC:cb}`,fontSize:11}}>✅ Verify {stockVerify&&`${pct}%`}</button>
+      </div>
+      {stockVerify&&(<div style={{...S.crd,padding:"10px 14px"}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:12,fontWeight:900}}>Progress</span><span style={{fontSize:14,fontWeight:900,color:pct===100?okC:pct>50?wnC:txd}}>{pct}%</span></div><div style={{height:6,borderRadius:3,background:dark?"#1a1d2a":"#e8eaef",overflow:"hidden"}}><div style={{width:`${pct}%`,height:"100%",borderRadius:3,background:pct===100?okC:pct>50?wnC:acc,transition:"width .4s"}}/></div><div style={{fontSize:10,color:txd,marginTop:4,fontWeight:700,display:"flex",justifyContent:"space-between"}}><span>{tc}/{tp}</span><div style={{display:"flex",gap:4}}><button onClick={resetConfirm} style={{...S.bSm("transparent",wnC),border:`1px solid ${wnC}44`,fontSize:10}}>🔄</button><button onClick={confirmAll} style={{...S.bSm(okC),fontSize:10}}>✅ All</button></div></div></div>)}
+      <div style={{display:"flex",gap:4,padding:"0 8px 8px",overflowX:"auto"}}>{["all",...pk].map(f=>(<button key={f} onClick={()=>setStockFilter(f)} style={{...S.btn(stockFilter===f?acc:"transparent",stockFilter===f?"#fff":txd),padding:"4px 10px",fontSize:12,border:`1px solid ${stockFilter===f?acc:cb}`,whiteSpace:"nowrap"}}>{f==="all"?"All":PRODUCTS[f]?.name||f}</button>))}</div>
+      {pr.map(pid=>{let pts=pid==="cross"?CROSS:PARTS.filter(p=>p.p===pid);if(searchQuery)pts=pts.filter(p=>p.n.toLowerCase().includes(searchQuery.toLowerCase()));if(!pts.length)return null;return(<div key={pid}><div style={{padding:"6px 10px 2px",fontSize:11,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1}}>{pid==="cross"?"🔗 Cross":(PRODUCTS[pid]?.icon||"")+" "+(PRODUCTS[pid]?.name||pid)} ({pts.length})</div>{pts.map(p=><PartRow key={p.id} part={p} showProduct={stockFilter==="all"} showConfirm={stockVerify} {...prp}/>)}</div>)})}
+    </div>)};
 
+  // ═══ RENDER: BOM TAB (NEW) ═══
+  const renderBom=()=>{
+    const pid=bomTab;
+    const pp=getProductParts(pid);
+    const profiles=bomProfiles[pid]||{};
+    const profileKeys=Object.keys(profiles);
+
+    return(<div>
+      <div style={{padding:"10px 10px 4px",fontSize:15,fontWeight:900}}>📋 Bill of Materials</div>
+      <div style={{padding:"0 10px 8px",fontSize:12,color:txd,fontWeight:700}}>Define recipes: which color each part uses per variant.</div>
+
+      {/* Production Planning Summary */}
+      {profileKeys.length>0&&(<div style={{...S.crd,padding:"12px 14px",border:`1.5px solid ${acc}30`,background:dark?`linear-gradient(135deg,#131620 0%,${okC}06 100%)`:`linear-gradient(135deg,#fff 0%,${okC}06 100%)`}}>
+        <div style={{fontSize:13,fontWeight:900,marginBottom:8}}>🏭 Production Capacity — {PRODUCTS[pid]?.name}</div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {profileKeys.map(vk=>{
+            const mx=calcMax(pid,vk,stock);
+            return(<div key={vk} style={{flex:1,minWidth:70,background:dark?"#0e1019":"#f5f6f9",borderRadius:8,padding:"8px",textAlign:"center",border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
+              <CBadge color={vk} CLR={CLR} size={11}/>
+              <div style={{fontSize:22,fontWeight:900,color:mx>0?okC:dnC,marginTop:4}}>{mx}</div>
+              <div style={{fontSize:9,fontWeight:800,color:txd}}>can make</div>
+            </div>);
+          })}
+        </div>
+      </div>)}
+
+      {/* Add Variant Button */}
+      <div style={{padding:"4px 8px 8px"}}>
+        <button onClick={()=>setBomEditing({pid,variantKey:"",profile:null})} style={{...S.btn(acc),width:"100%",height:40,borderRadius:10,fontSize:13}}>+ Create Variant Recipe</button>
+      </div>
+
+      {/* Variant Profiles */}
+      {profileKeys.map(vk=>{
+        const prof=profiles[vk];
+        const isExp=bomExpanded[`${pid}_${vk}`];
+        const mx=calcMax(pid,vk,stock);
+        // Find bottleneck part
+        let bottleneck=null,bottleneckQty=Infinity;
+        pp.forEach(p=>{
+          const mc=prof[p.id];
+          if(mc){const av=Math.floor((stock[p.id]?.[mc]||0)/(p.per||1));if(av<bottleneckQty){bottleneckQty=av;bottleneck=p}}
+        });
+
+        return(<div key={vk} style={{...S.crd,padding:"12px 14px",border:`1.5px solid ${CLR[vk]?.bg||"#888"}30`}}>
+          <div onClick={()=>setBomExpanded(e=>({...e,[`${pid}_${vk}`]:!isExp}))} style={{cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <CBadge color={vk} CLR={CLR} size={13}/>
+              <span style={{fontWeight:900,fontSize:15}}>{PRODUCTS[pid]?.name}</span>
+              <span style={{fontSize:18,fontWeight:900,color:mx>0?okC:dnC}}>{mx}</span>
+            </div>
+            <span style={{fontSize:16,color:txd,transform:isExp?"rotate(90deg)":"none",transition:"transform .2s"}}>›</span>
+          </div>
+
+          {isExp&&(<div style={{marginTop:10}}>
+            {/* Parts list */}
+            {pp.map(p=>{
+              const mc=prof[p.id]||"?";
+              const stk=stock[p.id]?.[mc]||0;
+              const isBottle=p===bottleneck;
+              return(<div key={p.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 8px",marginBottom:2,background:dark?"#0e1019":"#f5f6f9",borderRadius:6,border:isBottle?`1.5px solid ${dnC}44`:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
+                <div style={{flex:1}}>
+                  <span style={{fontWeight:800,fontSize:12}}>{p.n}</span>
+                  {p.products&&<span style={{fontSize:8,background:acc+"22",color:acc,padding:"1px 4px",borderRadius:3,fontWeight:800,marginLeft:4}}>CROSS</span>}
+                  {isBottle&&<span style={{fontSize:8,background:dnC+"22",color:dnC,padding:"1px 4px",borderRadius:3,fontWeight:800,marginLeft:4}}>BOTTLENECK</span>}
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <CBadge color={mc} CLR={CLR} size={9}/>
+                  <span style={{fontSize:12,fontWeight:900,color:stk<=threshold?dnC:okC,minWidth:30,textAlign:"right"}}>{stk}</span>
+                </div>
+              </div>);
+            })}
+
+            {/* Actions */}
+            <div style={{display:"flex",gap:6,marginTop:8}}>
+              <button onClick={()=>setBomEditing({pid,variantKey:vk,profile:prof})} style={{...S.btn(acc),flex:1,height:36,fontSize:12,borderRadius:8}}>✏️ Edit</button>
+              <button onClick={()=>{if(window.confirm(`Delete ${CLR[vk]?.lb} ${PRODUCTS[pid]?.name} recipe?`))deleteBomProfile(pid,vk)}} style={{...S.btn("transparent",dnC),border:`1.5px solid ${dnC}44`,flex:1,height:36,fontSize:12,borderRadius:8}}>🗑️ Delete</button>
+            </div>
+          </div>)}
+        </div>);
+      })}
+
+      {profileKeys.length===0&&<div style={{...S.crd,textAlign:"center",color:txd,padding:16,fontSize:13}}>No recipes yet. Create one above to define which color each part uses.</div>}
+    </div>);
+  };
+
+  // ═══ RENDER: LOG TAB ═══
   const renderLog=()=>{const fl=logFilter==="all"?logs:logs.filter(l=>l.p===logFilter);return(<div><div style={{padding:"10px 10px 4px",fontSize:15,fontWeight:900}}>📋 Log</div><div style={{display:"flex",gap:4,padding:"0 8px 8px",overflowX:"auto"}}>{["all",...Object.keys(PRODUCTS),"cross"].map(f=>(<button key={f} onClick={()=>setLogFilter(f)} style={{...S.btn(logFilter===f?acc:"transparent",logFilter===f?"#fff":txd),padding:"4px 10px",fontSize:12,border:`1px solid ${logFilter===f?acc:cb}`,whiteSpace:"nowrap"}}>{f==="all"?"All":f==="cross"?"Cross":PRODUCTS[f]?.name||f}</button>))}</div>{!fl.length&&<div style={{...S.crd,textAlign:"center",color:txd,padding:16,fontSize:13}}>No activity</div>}{fl.slice(0,100).map(l=>(<div key={l.id} style={{...S.crd,padding:"10px 12px",marginBottom:2}}><div style={{display:"flex",alignItems:"flex-start",gap:8}}><div style={{paddingTop:5,flexShrink:0}}><div style={{width:8,height:8,borderRadius:"50%",background:l.a==="assemble"?okC:l.a==="adjust"||l.a==="stock_edit"?acc:wnC}}/></div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:2}}><span style={S.tag(l.a==="assemble"?okC:l.a==="adjust"||l.a==="stock_edit"?acc:wnC)}>{l.a}</span>{l.p&&<span style={{fontSize:10,color:txd,fontWeight:800}}>{PRODUCTS[l.p]?.name||l.p}</span>}</div>{editLogId===l.id?(<div style={{marginTop:4}}><input value={editLogText} onChange={e=>setEditLogText(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")saveLogEdit(l.id);if(e.key==="Escape")setEditLogId(null)}} autoFocus style={{...S.inp,marginBottom:4,fontSize:13}}/><div style={{display:"flex",gap:4}}><button onClick={()=>saveLogEdit(l.id)} style={{...S.bSm(okC),flex:1}}>Save</button><button onClick={()=>setEditLogId(null)} style={{...S.bSm(dark?"#444":"#ccc",tx),flex:1}}>Cancel</button></div></div>):(<div style={{fontSize:13,fontWeight:800,lineHeight:1.3}}>{l.d}</div>)}<div style={{fontSize:10,color:txd,marginTop:2,fontWeight:600}}>{fmtTS(l.ts)}</div></div><div style={{display:"flex",flexDirection:"column",gap:4}}><button onClick={()=>{setEditLogId(l.id);setEditLogText(l.d)}} style={S.iBtn}>✏️</button><button onClick={()=>deleteLog(l.id)} style={{...S.iBtn,color:dnC+"aa"}}>🗑️</button></div></div></div>))}{logs.length>0&&<div style={{padding:"8px 10px"}}><button onClick={clearLogs} style={{...S.btn("transparent",dnC),border:`1px solid ${dnC}`,width:"100%",fontSize:12}}>🗑️ Clear All</button></div>}</div>)};
 
-  const renderConfirm=()=>{const pk=Object.keys(PRODUCTS);const tp=allParts.length,tc=allParts.filter(p=>confirmed[p.id]).length;const pct=tp?Math.round(tc/tp*100):0;return(<div><div style={{padding:"10px 10px 4px",fontSize:15,fontWeight:900}}>✅ Verify</div><div style={{...S.crd,padding:"12px 14px"}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:12,fontWeight:900}}>Progress</span><span style={{fontSize:14,fontWeight:900,color:pct===100?okC:pct>50?wnC:txd}}>{pct}%</span></div><div style={{height:6,borderRadius:3,background:dark?"#1a1d2a":"#e8eaef",overflow:"hidden"}}><div style={{width:`${pct}%`,height:"100%",borderRadius:3,background:pct===100?okC:pct>50?wnC:acc,transition:"width .4s"}}/></div><div style={{fontSize:10,color:txd,marginTop:4,fontWeight:700}}>{tc}/{tp}</div></div><div style={{padding:"4px 8px 8px",display:"flex",gap:6}}><button onClick={resetConfirm} style={{...S.btn("transparent",wnC),border:`1.5px solid ${wnC}44`,flex:1,fontSize:12,borderRadius:10}}>🔄 Clear</button><button onClick={confirmAll} style={{...S.btn(okC),flex:1,fontSize:12,borderRadius:10}}>✅ All</button></div>{pk.map(pid=>{let pp=getProductParts(pid);if(searchQuery)pp=pp.filter(p=>p.n.toLowerCase().includes(searchQuery.toLowerCase()));if(!pp.length)return null;const cc=pp.filter(p=>confirmed[p.id]).length;return(<div key={pid}><div style={{padding:"6px 10px 2px",fontSize:11,fontWeight:900,color:txd,textTransform:"uppercase",display:"flex",justifyContent:"space-between"}}><span>{PRODUCTS[pid]?.icon} {PRODUCTS[pid]?.name}</span><span style={{color:cc===pp.length?okC:wnC}}>{cc}/{pp.length}</span></div>{pp.map(p=>(<div key={p.id} onClick={()=>toggleConfirm(p.id)} style={{...S.crd,padding:"10px",display:"flex",alignItems:"center",gap:8,cursor:"pointer",background:confirmed[p.id]?okC+"15":card,border:confirmed[p.id]?`1px solid ${okC}`:`1px solid ${cb}`}}><span style={{fontSize:20}}>{confirmed[p.id]?"✅":"⬜"}</span><div style={{flex:1}}><div style={{fontWeight:900,fontSize:13}}>{p.n}</div><div style={{fontSize:10,color:txd,marginTop:2,fontWeight:700}}>{p.c.map(c=>CLR[c]?.lb||c).join(", ")}</div></div></div>))}</div>)})}</div>)};
-
+  // ═══ RENDER: SETTINGS ═══
   const renderSettings=()=>(<div>
     <div style={{padding:"12px 12px 4px",fontSize:15,fontWeight:900}}>⚙️ Settings</div>
     <div style={{padding:"8px 10px 2px",fontSize:10,fontWeight:900,color:acc,letterSpacing:.5}}>🔧 MANAGE</div>
@@ -572,7 +877,31 @@ function App(){
   return(<div style={S.app}>
     {toast&&<div className={toastAnim==="enter"?"toast-enter":"toast-exit"} style={S.toast}>{toast.msg}</div>}
     {showClear&&(<div className="modal-bg" style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.8)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(6px)"}}><div className="modal-card" style={{...S.crd,margin:0,maxWidth:300,width:"100%",textAlign:"center",padding:"24px 20px",borderRadius:16}}><div style={{fontSize:44,marginBottom:8}}>⚠️</div><h2 style={{marginTop:0,color:dnC,fontSize:20,fontWeight:900}}>CLEAR ALL?</h2><p style={{color:txd,marginBottom:18,fontSize:13,fontWeight:700}}>Deletes stock, logs, notes.</p><div style={{display:"flex",flexDirection:"column",gap:8}}><button onClick={()=>setShowClear(false)} style={{...S.btn(okC),width:"100%",height:42,fontSize:14,borderRadius:10}}>✅ Cancel</button><button onClick={()=>{wipeData();setShowClear(false)}} style={{...S.btn("transparent",dnC),border:`2px solid ${dnC}`,width:"100%",height:42,fontSize:14,borderRadius:10}}>🚨 Delete</button></div></div></div>)}
-    {confirmAsm&&(<div className="modal-bg" style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.75)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(6px)"}}><div className="modal-card" style={{...S.crd,margin:0,maxWidth:300,width:"100%",textAlign:"center",padding:"24px 20px",borderRadius:16}}><div style={{fontSize:40,marginBottom:8}}>{PRODUCTS[confirmAsm.pid]?.icon}</div><div style={{fontSize:17,fontWeight:900,marginBottom:6}}>Confirm Assembly</div><div style={{fontSize:13,color:txd,marginBottom:16,lineHeight:1.4}}>Make <strong style={{color:CLR[confirmAsm.color]?.bg}}>{confirmAsm.qty} {CLR[confirmAsm.color]?.lb}</strong> {PRODUCTS[confirmAsm.pid]?.name}{confirmAsm.qty>1?"s":""}?{calcMax(confirmAsm.pid,confirmAsm.color,stock)<confirmAsm.qty&&(<div style={{color:wnC,fontSize:11,marginTop:4,fontWeight:900}}>⚠️ Parts will go below 0</div>)}</div><div style={{display:"flex",gap:8}}><button onClick={()=>setConfirmAsm(null)} style={{...S.btn(dark?"#252836":"#e0e3ea",tx),flex:1,height:40,fontSize:13,borderRadius:10}}>Cancel</button><button onClick={confirmDoAssemble} style={{...S.btn(okC),flex:1,height:40,fontSize:13,borderRadius:10}}>Confirm</button></div></div></div>)}
+    {confirmAsm&&(<div className="modal-bg" style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.75)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(6px)"}}><div className="modal-card" style={{...S.crd,margin:0,maxWidth:340,width:"100%",textAlign:"center",padding:"24px 20px",borderRadius:16}}>
+      <div style={{fontSize:40,marginBottom:8}}>{PRODUCTS[confirmAsm.pid]?.icon}</div>
+      <div style={{fontSize:17,fontWeight:900,marginBottom:6}}>Confirm Assembly</div>
+      <div style={{fontSize:13,color:txd,marginBottom:10,lineHeight:1.4}}>Make <strong style={{color:CLR[confirmAsm.color]?.bg}}>{confirmAsm.qty} {CLR[confirmAsm.color]?.lb}</strong> {PRODUCTS[confirmAsm.pid]?.name}{confirmAsm.qty>1?"s":""}?{calcMax(confirmAsm.pid,confirmAsm.color,stock)<confirmAsm.qty&&(<div style={{color:wnC,fontSize:11,marginTop:4,fontWeight:900}}>⚠️ Parts will go below 0</div>)}</div>
+      {/* Show what will be deducted */}
+      <div style={{textAlign:"left",maxHeight:"30vh",overflowY:"auto",marginBottom:12}}>
+        {getProductParts(confirmAsm.pid).map(p=>{
+          const mc=getPartColorForAsm(p,confirmAsm.color,confirmAsm.pid);
+          if(!mc)return null;
+          const cur=stock[p.id]?.[mc]||0;
+          const aft=Math.max(0,cur-confirmAsm.qty*(p.per||1));
+          return(<div key={p.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"3px 6px",fontSize:11,fontWeight:700}}>
+            <span style={{flex:1}}>{p.n}</span>
+            <CBadge color={mc} CLR={CLR} size={8}/>
+            <span style={{minWidth:60,textAlign:"right",color:aft<=0?dnC:txd}}>{cur}→{aft}</span>
+          </div>);
+        })}
+      </div>
+      <div style={{display:"flex",gap:8}}><button onClick={()=>setConfirmAsm(null)} style={{...S.btn(dark?"#252836":"#e0e3ea",tx),flex:1,height:40,fontSize:13,borderRadius:10}}>Cancel</button><button onClick={confirmDoAssemble} style={{...S.btn(okC),flex:1,height:40,fontSize:13,borderRadius:10}}>Confirm</button></div>
+    </div></div>)}
+
+    {/* BOM Editor Modal */}
+    <Modal show={!!bomEditing} onClose={()=>setBomEditing(null)} title={`📋 ${bomEditing?((bomEditing.variantKey?'Edit':'New')+' Recipe — '+(PRODUCTS[bomEditing.pid]?.name||'')):''}`} theme={theme}>
+      {bomEditing&&<BomEditor pid={bomEditing.pid} variantKey={bomEditing.variantKey} profile={bomEditing.profile} PRODUCTS={PRODUCTS} PARTS={PARTS} CROSS={CROSS} CLR={CLR} onSave={saveBomProfile} onClose={()=>setBomEditing(null)} theme={theme}/>}
+    </Modal>
 
     <Modal show={showManage==="colors"} onClose={()=>setShowManage(null)} title="🎨 Colors" theme={theme}><MgrColors CLR={CLR} onAdd={addColor} onEdit={editColor} onDel={deleteColor} theme={theme} toast={showToast}/></Modal>
     <Modal show={showManage==="products"} onClose={()=>setShowManage(null)} title="📦 Products" theme={theme}><MgrProducts PRODUCTS={PRODUCTS} PARTS={PARTS} onAdd={addProduct} onEdit={editProduct} onDel={deleteProduct} theme={theme} toast={showToast}/></Modal>
@@ -590,20 +919,25 @@ function App(){
       </div>
     </div>
 
+    {/* Sub-nav for Assembly */}
     {mainTab==="products"&&(<div style={S.subNav}>{Object.keys(PRODUCTS).map(pid=>(<button key={pid} onClick={()=>{setProdTab(pid);setSearchQuery("")}} style={S.subNI(prodTab===pid)}><span style={{fontSize:13}}>{PRODUCTS[pid].icon}</span>{PRODUCTS[pid].name}</button>))}<button onClick={()=>{setProdTab("cross");setSearchQuery("")}} style={S.subNI(prodTab==="cross")}><span style={{fontSize:13}}>🔗</span>Cross</button></div>)}
 
-    {["products","stock","confirm"].includes(mainTab)&&(<div style={{padding:"8px 10px 0",position:"relative"}}><input type="text" placeholder="Search parts..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} style={{...S.inp,height:38,fontSize:13,fontWeight:700,paddingLeft:34}}/><span style={{position:"absolute",left:20,top:"50%",transform:"translateY(-30%)",fontSize:14,opacity:.5,pointerEvents:"none"}}>🔍</span>{searchQuery&&<span onClick={()=>setSearchQuery("")} style={{position:"absolute",right:20,top:"50%",transform:"translateY(-30%)",fontSize:16,cursor:"pointer",opacity:.5}}>✕</span>}</div>)}
+    {/* Sub-nav for BOM */}
+    {mainTab==="bom"&&(<div style={S.subNav}>{Object.keys(PRODUCTS).map(pid=>(<button key={pid} onClick={()=>{setBomTab(pid)}} style={S.subNI(bomTab===pid)}><span style={{fontSize:13}}>{PRODUCTS[pid].icon}</span>{PRODUCTS[pid].name}</button>))}</div>)}
+
+    {/* Search bar */}
+    {["products","stock"].includes(mainTab)&&(<div style={{padding:"8px 10px 0",position:"relative"}}><input type="text" placeholder="Search parts..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} style={{...S.inp,height:38,fontSize:13,fontWeight:700,paddingLeft:34}}/><span style={{position:"absolute",left:20,top:"50%",transform:"translateY(-30%)",fontSize:14,opacity:.5,pointerEvents:"none"}}>🔍</span>{searchQuery&&<span onClick={()=>setSearchQuery("")} style={{position:"absolute",right:20,top:"50%",transform:"translateY(-30%)",fontSize:16,cursor:"pointer",opacity:.5}}>✕</span>}</div>)}
 
     <div style={{paddingBottom:8}}>
       {mainTab==="products"&&prodTab!=="cross"&&PRODUCTS[prodTab]&&renderProd(prodTab)}
       {mainTab==="products"&&prodTab==="cross"&&renderCross()}
       {mainTab==="stock"&&renderStock()}
+      {mainTab==="bom"&&renderBom()}
       {mainTab==="log"&&renderLog()}
-      {mainTab==="confirm"&&renderConfirm()}
       {mainTab==="settings"&&renderSettings()}
     </div>
 
-    <nav style={S.nav}>{[{k:"products",i:"🏭",l:"Assembly"},{k:"stock",i:"📦",l:"Stock"},{k:"log",i:"📋",l:"Logs"},{k:"confirm",i:"✅",l:"Verify"},{k:"settings",i:"⚙️",l:"Settings"}].map(n=>(<button key={n.k} onClick={()=>{setMainTab(n.k);setSearchQuery("")}} style={S.nI(mainTab===n.k)}>{mainTab===n.k&&<div style={{position:"absolute",top:-1,left:"25%",right:"25%",height:2.5,borderRadius:2,background:acc,boxShadow:`0 0 8px ${acc}66`}}/>}<span style={{fontSize:17,marginBottom:1}}>{n.i}</span>{n.l}</button>))}</nav>
+    <nav style={S.nav}>{[{k:"products",i:"🏭",l:"Assembly"},{k:"stock",i:"📦",l:"Stock"},{k:"bom",i:"📋",l:"BOM"},{k:"log",i:"📝",l:"Logs"},{k:"settings",i:"⚙️",l:"Settings"}].map(n=>(<button key={n.k} onClick={()=>{setMainTab(n.k);setSearchQuery("")}} style={S.nI(mainTab===n.k)}>{mainTab===n.k&&<div style={{position:"absolute",top:-1,left:"25%",right:"25%",height:2.5,borderRadius:2,background:acc,boxShadow:`0 0 8px ${acc}66`}}/>}<span style={{fontSize:17,marginBottom:1}}>{n.i}</span>{n.l}</button>))}</nav>
   </div>);
 }
 
