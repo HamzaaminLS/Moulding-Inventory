@@ -7,11 +7,15 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Little Star">
+  <meta name="theme-color" content="#0a0c14">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="moulding icon.png">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%230f1117'/><text x='50' y='68' text-anchor='middle' font-size='52'>⭐</text></svg>">
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+  <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(()=>{})}</script>
   <style>
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     body{margin:0;padding:0;background:#0a0c14;overflow-x:hidden}
@@ -26,6 +30,7 @@
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
     @keyframes syncPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:.5}}
     @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+    @keyframes offlinePulse{0%,100%{opacity:1}50%{opacity:.7}}
     @keyframes backdropIn{from{opacity:0}to{opacity:1}}
     .toast-enter{animation:fadeInDown .3s cubic-bezier(.34,1.56,.64,1) forwards}
     .toast-exit{animation:fadeOut .25s ease forwards}
@@ -144,6 +149,7 @@ const DEF_CROSS=[{id:"cx_pipe",n:"Stroller & Tolo Pipe",c:["black"],per:1,produc
 
 const DEF_ASM={stroller:{red:{darkblue:"darkblue"}}};
 const DEF_BOM={};
+const DEF_SUBASM=[];
 
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function fmtTS(ts){const d=new Date(ts),dd=String(d.getDate()).padStart(2,"0"),mm=String(d.getMonth()+1).padStart(2,"0"),yy=String(d.getFullYear()).slice(2);let h=d.getHours();const ap=h>=12?"PM":"AM";h=h%12||12;return`${dd}/${mm}/${yy} ${h}:${String(d.getMinutes()).padStart(2,"0")} ${ap}`}
@@ -378,11 +384,130 @@ function MgrCross({PRODUCTS,CROSS,CLR,onAdd,onEdit,onDel,theme,toast}){
 }
 
 // ═══════════════════════════════════════
+// ═══  SUB-ASSEMBLY MANAGER (NEW)  ═══
+// ═══════════════════════════════════════
+function MgrSubAsm({PRODUCTS,PARTS,CROSS,SUBASM,CLR,onAdd,onEdit,onDel,theme,toast}){
+  const{dark,tx,txd,acc,okC,dnC,cb,S}=theme;
+  const[sp,setSp]=useState(Object.keys(PRODUCTS)[0]||"");
+  const[nn,setNn]=useState("");const[nc,setNc]=useState([]);const[ncomp,setNcomp]=useState([]);const[np,setNp]=useState(1);
+  const[eid,setEid]=useState(null);const[en,setEn]=useState("");const[ec,setEc]=useState([]);const[ecomp,setEcomp]=useState([]);const[ep,setEp]=useState(1);
+  const[cd,setCd]=useState(null);
+  const ck=Object.keys(CLR);
+  const tg=(a,s,c)=>a.includes(c)?s(a.filter(x=>x!==c)):s([...a,c]);
+  const sa=SUBASM.filter(s=>s.p===sp);
+  const availParts=[...PARTS.filter(p=>p.p===sp),...CROSS.filter(cp=>cp.products&&cp.products.includes(sp))];
+  useEffect(()=>{if(!PRODUCTS[sp]){const k=Object.keys(PRODUCTS)[0];if(k)setSp(k)}},[PRODUCTS,sp]);
+  const toggleComp=(arr,setArr,partId,part,colors)=>{
+    const idx=arr.findIndex(x=>x.partId===partId);
+    if(idx>=0)setArr(arr.filter(x=>x.partId!==partId));
+    else{
+      const cm={};
+      if(part.c.length===1){(colors||[]).forEach(v=>cm[v]=part.c[0])}
+      setArr([...arr,{partId,per:1,colorMap:cm}]);
+    }
+  };
+  const setCompPer=(arr,setArr,partId,per)=>{
+    setArr(arr.map(x=>x.partId===partId?{...x,per:parseInt(per)||1}:x));
+  };
+  const setCompVarColor=(arr,setArr,partId,variant,color)=>{
+    setArr(arr.map(x=>{
+      if(x.partId!==partId)return x;
+      const cm={...(x.colorMap||{})};
+      if(color)cm[variant]=color;else delete cm[variant];
+      return{...x,colorMap:cm};
+    }));
+  };
+  const renderCompColors=(comp,part,colors,arr,setArr)=>{
+    if(!comp||!colors||colors.length===0)return null;
+    const cm=comp.colorMap||{};
+    return(<div style={{display:"flex",gap:3,flexWrap:"wrap",marginTop:3}} onClick={e=>e.stopPropagation()}>
+      {colors.map(v=>{
+        const val=cm[v]||comp.color||"";
+        return(<div key={v} style={{display:"flex",alignItems:"center",gap:2,background:dark?"#0d0f18":"#f0f1f4",borderRadius:4,padding:"1px 4px"}}>
+          <span style={{fontSize:8,fontWeight:900,color:CLR[v]?.bg||txd,minWidth:28}}>{CLR[v]?.lb||v}:</span>
+          <select value={val} onChange={e=>setCompVarColor(arr,setArr,comp.partId,v,e.target.value)} style={{...S.inp,width:"auto",minWidth:50,height:20,fontSize:9,padding:"0 2px",border:"none",background:"transparent",color:tx}}>
+            <option value="">Auto</option>
+            {part.c.map(c=><option key={c} value={c}>{CLR[c]?.lb||c}</option>)}
+          </select>
+        </div>);
+      })}
+    </div>);
+  };
+  const compSummary=(s)=>s.components.map(comp=>{
+    const pt=availParts.find(p=>p.id===comp.partId);if(!pt)return"-";
+    const cm=comp.colorMap||{};
+    const entries=Object.entries(cm);
+    const mapped=entries.length>0?entries.map(([v,c])=>`${CLR[v]?.lb||v}\u2192${CLR[c]?.lb||c}`).join(", "):"";
+    return pt.n+(mapped?` [${mapped}]`:(comp.color?` [${CLR[comp.color]?.lb||comp.color}]`:" [Auto]"))+(comp.per>1?` \u00d7${comp.per}`:"");
+  }).join(", ");
+  return(<div>
+    <div style={{fontSize:12,fontWeight:800,color:txd,marginBottom:8}}>Sub-assemblies are assembled from parts first, then used in final product assembly.</div>
+    <div style={{display:"flex",gap:4,marginBottom:10,overflowX:"auto",paddingBottom:4}}>
+      {Object.entries(PRODUCTS).map(([k,v])=>(<button key={k} onClick={()=>setSp(k)} style={{...S.btn(sp===k?acc:"transparent",sp===k?"#fff":txd),padding:"5px 12px",fontSize:12,border:`1px solid ${sp===k?acc:cb}`,whiteSpace:"nowrap"}}>{v.icon} {v.name}</button>))}
+    </div>
+    {sa.map(s=>(<div key={s.id} style={{padding:"8px 10px",marginBottom:4,background:dark?"#0e1019":"#f5f6f9",borderRadius:8,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
+      {eid===s.id?(<div>
+        <input value={en} onChange={e=>setEn(e.target.value)} style={{...S.inp,marginBottom:6,height:32,fontSize:12}} placeholder="Name"/>
+        <div style={{fontSize:10,fontWeight:900,color:txd,marginBottom:4}}>COLORS:</div>
+        <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:6}}>{ck.map(c=>(<button key={c} onClick={()=>tg(ec,setEc,c)} style={{...S.bSm(ec.includes(c)?CLR[c]?.bg||"#888":"transparent",ec.includes(c)?"#fff":CLR[c]?.bg||"#888"),border:`1.5px solid ${CLR[c]?.bg||"#888"}`,padding:"3px 8px",fontSize:10}}>{CLR[c]?.lb||c}</button>))}</div>
+        <div style={{fontSize:10,fontWeight:900,color:txd,marginBottom:4}}>COMPONENT PARTS (set color per variant):</div>
+        {availParts.map(p=>{const sel=ecomp.find(x=>x.partId===p.id);return(<div key={p.id} style={{marginBottom:3,padding:"4px 6px",background:sel?(dark?"#1a2235":"#e8f0ff"):(dark?"#0a0c14":"#fff"),borderRadius:6,border:`1px solid ${sel?(acc+"44"):(dark?"#1a1d2e":"#eceef3")}`,cursor:"pointer"}} onClick={()=>toggleComp(ecomp,setEcomp,p.id,p,ec)}>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{fontSize:14}}>{sel?"✅":"⬜"}</span>
+            <span style={{flex:1,fontSize:12,fontWeight:700}}>{p.n}</span>
+            {sel&&<input type="number" value={sel.per} onChange={e=>{e.stopPropagation();setCompPer(ecomp,setEcomp,p.id,e.target.value)}} onClick={e=>e.stopPropagation()} style={{...S.inp,width:36,height:24,fontSize:11,textAlign:"center",padding:"1px"}}/>}
+          </div>
+          {sel&&renderCompColors(sel,p,ec,ecomp,setEcomp)}
+        </div>)})
+        }
+        <div style={{display:"flex",gap:4,alignItems:"center",marginTop:6}}><span style={{fontSize:11,color:txd,fontWeight:800}}>Per product:</span>
+          <input type="number" value={ep} onChange={e=>setEp(parseInt(e.target.value)||1)} style={{...S.inp,width:50,height:28,fontSize:12,textAlign:"center",padding:"2px"}}/>
+          <div style={{flex:1}}/><button onClick={()=>{onEdit(s.id,en,ec,ecomp,ep);setEid(null)}} style={{...S.bSm(okC),height:28}}>Save</button>
+          <button onClick={()=>setEid(null)} style={{...S.bSm(dark?"#333":"#ddd",tx),height:28}}>✕</button>
+        </div>
+      </div>):cd===s.id?(<div style={{display:"flex",gap:4,alignItems:"center"}}><span style={{fontSize:12,fontWeight:800,color:dnC}}>Delete "{s.n}"?</span><div style={{flex:1}}/><button onClick={()=>{onDel(s.id);setCd(null)}} style={{...S.bSm(dnC),height:28}}>Yes</button><button onClick={()=>setCd(null)} style={{...S.bSm(dark?"#333":"#ddd",tx),height:28}}>No</button></div>
+      ):(<div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div><div style={{fontWeight:900,fontSize:13,display:"flex",alignItems:"center",gap:4}}>🔧 {s.n}<span style={{fontSize:9,background:acc+"22",color:acc,padding:"1px 5px",borderRadius:4,fontWeight:800}}>SUB-ASSY</span></div>
+          <div style={{display:"flex",gap:3,marginTop:3,flexWrap:"wrap"}}>{s.c.map(c=><CBadge key={c} color={c} CLR={CLR} size={9}/>)}<span style={{fontSize:10,color:txd,fontWeight:700}}>×{s.per}/product</span></div>
+          <div style={{fontSize:10,color:txd,marginTop:2,fontWeight:700}}>Parts: {compSummary(s)}</div>
+        </div>
+        <div style={{display:"flex",gap:4}}><button onClick={()=>{setEid(s.id);setEn(s.n);setEc([...s.c]);setEcomp(s.components.map(x=>({...x,colorMap:x.colorMap?{...x.colorMap}:{}})));setEp(s.per||1)}} style={S.iBtn}>✏️</button><button onClick={()=>setCd(s.id)} style={{...S.iBtn,color:dnC+"aa"}}>🗑️</button></div>
+      </div>)}
+    </div>))}
+    {sa.length===0&&<div style={{textAlign:"center",color:txd,padding:12,fontSize:13}}>No sub-assemblies for {PRODUCTS[sp]?.name}. Add below.</div>}
+    <div style={{marginTop:12,padding:"12px",background:dark?"#0e1019":"#f5f6f9",borderRadius:10,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
+      <div style={{fontSize:11,fontWeight:900,color:acc,marginBottom:6}}>+ ADD SUB-ASSEMBLY TO {(PRODUCTS[sp]?.name||"?").toUpperCase()}</div>
+      <input placeholder="Sub-assembly name (e.g. Sprinter Handle)" value={nn} onChange={e=>setNn(e.target.value)} style={{...S.inp,marginBottom:6,height:34,fontSize:12}}/>
+      <div style={{fontSize:10,fontWeight:900,color:txd,marginBottom:4}}>COLORS:</div>
+      <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:6}}>{ck.map(c=>(<button key={c} onClick={()=>tg(nc,setNc,c)} style={{...S.bSm(nc.includes(c)?CLR[c]?.bg||"#888":"transparent",nc.includes(c)?"#fff":CLR[c]?.bg||"#888"),border:`1.5px solid ${CLR[c]?.bg||"#888"}`,padding:"3px 8px",fontSize:10}}>{CLR[c]?.lb||c}</button>))}</div>
+      <div style={{fontSize:10,fontWeight:900,color:txd,marginBottom:4}}>COMPONENT PARTS (set color per variant):</div>
+      {availParts.map(p=>{const sel=ncomp.find(x=>x.partId===p.id);return(<div key={p.id} style={{marginBottom:3,padding:"4px 6px",background:sel?(dark?"#1a2235":"#e8f0ff"):(dark?"#0a0c14":"#fff"),borderRadius:6,border:`1px solid ${sel?(acc+"44"):(dark?"#1a1d2e":"#eceef3")}`,cursor:"pointer"}} onClick={()=>toggleComp(ncomp,setNcomp,p.id,p,nc)}>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <span style={{fontSize:14}}>{sel?"✅":"⬜"}</span>
+          <span style={{flex:1,fontSize:12,fontWeight:700}}>{p.n}</span>
+          {sel&&<input type="number" value={sel.per} onChange={e=>{e.stopPropagation();setCompPer(ncomp,setNcomp,p.id,e.target.value)}} onClick={e=>e.stopPropagation()} style={{...S.inp,width:36,height:24,fontSize:11,textAlign:"center",padding:"1px"}}/>}
+        </div>
+        {sel&&renderCompColors(sel,p,nc,ncomp,setNcomp)}
+      </div>)})
+      }
+      <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:8,marginTop:6}}><span style={{fontSize:11,color:txd,fontWeight:800}}>Per product:</span><input type="number" value={np} onChange={e=>setNp(parseInt(e.target.value)||1)} style={{...S.inp,width:50,height:30,fontSize:12,textAlign:"center",padding:"2px"}}/></div>
+      <button onClick={()=>{if(!nn||nc.length===0||ncomp.length===0){toast("Name+colors+parts needed","err");return}onAdd(nn,sp,nc,ncomp,np);setNn("");setNc([]);setNcomp([]);setNp(1)}} disabled={!nn||nc.length===0||ncomp.length===0} style={{...S.btn(okC),width:"100%",height:36,borderRadius:8,opacity:(!nn||nc.length===0||ncomp.length===0)?.5:1}}>Add Sub-Assembly</button>
+    </div>
+  </div>);
+}
+
+// ═══════════════════════════════════════
 // ═══  BOM EDITOR COMPONENT (NEW)  ═══
 // ═══════════════════════════════════════
-function BomEditor({pid,variantKey,profile,PRODUCTS,PARTS,CROSS,CLR,onSave,onClose,theme}){
+function BomEditor({pid,variantKey,profile,PRODUCTS,PARTS,CROSS,SUBASM,CLR,onSave,onClose,theme}){
   const{dark,tx,txd,acc,okC,dnC,cb,S}=theme;
-  const parts=[...PARTS.filter(p=>p.p===pid),...CROSS.filter(cp=>cp.products&&cp.products.includes(pid))];
+  const subs=(SUBASM||[]).filter(s=>s.p===pid).map(s=>({...s,_isSub:true}));
+  // Get parts consumed by sub-assemblies
+  const saPartIds=new Set();subs.forEach(s=>(s.components||[]).forEach(c=>saPartIds.add(c.partId)));
+  // Filter out parts used in sub-assemblies — only show direct parts + sub-assemblies
+  const rawParts=[...PARTS.filter(p=>p.p===pid),...CROSS.filter(cp=>cp.products&&cp.products.includes(pid))];
+  const directParts=rawParts.filter(p=>!saPartIds.has(p.id));
+  const parts=[...directParts,...subs];
   const allColorKeys=Object.keys(CLR);
   
   // Variant color = the "base" color key for this variant
@@ -398,6 +523,13 @@ function BomEditor({pid,variantKey,profile,PRODUCTS,PARTS,CROSS,CLR,onSave,onClo
     });
     return m;
   });
+  // Track which parts are skipped (not deducted during assembly)
+  const[skipped,setSkipped]=useState(()=>{
+    if(!profile)return{};
+    const sk={};
+    Object.entries(profile).forEach(([k,v])=>{if(v==="_skip")sk[k]=true});
+    return sk;
+  });
 
   // When base color changes, re-auto-fill parts that match
   const changeBase=(newBase)=>{
@@ -405,6 +537,7 @@ function BomEditor({pid,variantKey,profile,PRODUCTS,PARTS,CROSS,CLR,onSave,onClo
     setMapping(prev=>{
       const m={...prev};
       parts.forEach(p=>{
+        if(skipped[p.id])return; // don't touch skipped parts
         if(p.c.length===1){m[p.id]=p.c[0]}
         else if(p.c.includes(newBase)){m[p.id]=newBase}
         // Keep existing override if part doesn't have new base
@@ -414,6 +547,14 @@ function BomEditor({pid,variantKey,profile,PRODUCTS,PARTS,CROSS,CLR,onSave,onClo
   };
 
   const setPartColor=(partId,color)=>setMapping(m=>({...m,[partId]:color}));
+  const toggleSkip=(partId,part)=>{
+    setSkipped(sk=>{
+      const ns={...sk};
+      if(ns[partId]){delete ns[partId];/* restore a default color */setMapping(m=>{const nm={...m};if(part.c.includes(baseColor))nm[partId]=baseColor;else nm[partId]=part.c[0]||"";return nm})}
+      else{ns[partId]=true;setMapping(m=>({...m,[partId]:"_skip"}))}
+      return ns;
+    });
+  };
 
   // Get variant-eligible colors (colors used by colored parts of this product)
   const variantColors=useMemo(()=>{
@@ -422,12 +563,25 @@ function BomEditor({pid,variantKey,profile,PRODUCTS,PARTS,CROSS,CLR,onSave,onClo
     return[...s];
   },[parts]);
 
-  const canSave=baseColor&&parts.every(p=>mapping[p.id]);
+  const canSave=baseColor&&parts.every(p=>skipped[p.id]||mapping[p.id]);
+
+  const handleSave=()=>{
+    if(!canSave)return;
+    // Build final mapping, marking skipped parts as "_skip"
+    const finalMapping={...mapping};
+    Object.keys(skipped).forEach(k=>{if(skipped[k])finalMapping[k]="_skip"});
+    onSave(pid,baseColor,finalMapping);
+  };
 
   return(<div>
     <div style={{fontSize:12,fontWeight:800,color:txd,marginBottom:10}}>
       Define which color each part uses for the <strong>{CLR[baseColor]?.lb||baseColor||"?"}</strong> variant of <strong>{PRODUCTS[pid]?.name}</strong>.
     </div>
+
+    {/* Info about hidden sub-assembly parts */}
+    {saPartIds.size>0&&<div style={{fontSize:11,fontWeight:700,color:"#f59e0b",marginBottom:10,padding:"6px 10px",background:"#f59e0b11",borderRadius:8,border:"1px solid #f59e0b22"}}>
+      ⚠️ {saPartIds.size} part{saPartIds.size>1?"s":""} used in sub-assemblies {saPartIds.size>1?"are":"is"} hidden (managed via sub-assembly).
+    </div>}
 
     <div style={{marginBottom:14}}>
       <div style={{fontSize:10,fontWeight:900,color:acc,marginBottom:6}}>VARIANT BASE COLOR</div>
@@ -448,22 +602,25 @@ function BomEditor({pid,variantKey,profile,PRODUCTS,PARTS,CROSS,CLR,onSave,onClo
     <div style={{fontSize:10,fontWeight:900,color:acc,marginBottom:6}}>PART → COLOR MAPPING</div>
     <div style={{maxHeight:"45vh",overflowY:"auto",marginBottom:12}}>
       {parts.map(p=>{
-        const cur=mapping[p.id]||"";
-        const isOverride=cur&&cur!==baseColor&&p.c.length>1&&p.c.includes(baseColor);
+        const isSkip=!!skipped[p.id];
+        const cur=isSkip?"":mapping[p.id]||"";
+        const isOverride=!isSkip&&cur&&cur!=="_skip"&&cur!==baseColor&&p.c.length>1&&p.c.includes(baseColor);
         return(
-          <div key={p.id} style={{padding:"8px 10px",marginBottom:3,background:dark?"#0e1019":"#f5f6f9",borderRadius:8,border:`1px solid ${isOverride?(dnC+"55"):(dark?"#1a1d2e":"#eceef3")}`}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
-              <span style={{fontWeight:800,fontSize:12,flex:1}}>{p.n}</span>
+          <div key={p.id} style={{padding:"8px 10px",marginBottom:3,background:isSkip?(dark?"#1a1018":"#fef2f2"):(dark?"#0e1019":"#f5f6f9"),borderRadius:8,border:`1px solid ${isSkip?(dnC+"33"):isOverride?(dnC+"55"):(dark?"#1a1d2e":"#eceef3")}`,opacity:isSkip?.6:1}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:isSkip?0:4}}>
+              <span style={{fontWeight:800,fontSize:12,flex:1,textDecoration:isSkip?"line-through":"none"}}>{p.n}</span>
               {p.products&&<span style={{fontSize:9,background:acc+"22",color:acc,padding:"1px 5px",borderRadius:4,fontWeight:800}}>CROSS</span>}
+              {p._isSub&&<span style={{fontSize:9,background:"#f59e0b22",color:"#f59e0b",padding:"1px 5px",borderRadius:4,fontWeight:800}}>SUB-ASSY</span>}
               {isOverride&&<span style={{fontSize:9,background:dnC+"22",color:dnC,padding:"1px 5px",borderRadius:4,fontWeight:800,marginLeft:4}}>OVERRIDE</span>}
+              <button onClick={(e)=>{e.stopPropagation();toggleSkip(p.id,p)}} style={{...S.bSm(isSkip?dnC+"22":dark?"#1a1d2e":"#eee",isSkip?dnC:txd),border:`1px solid ${isSkip?dnC+"44":cb}`,fontSize:9,padding:"2px 6px",marginLeft:4}} title={isSkip?"Include this part":"Skip this part (won't deduct)"}>{isSkip?"🚫 Skipped":"Skip"}</button>
             </div>
-            <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
+            {!isSkip&&<div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
               {p.c.map(c=>(<button key={c} onClick={()=>setPartColor(p.id,c)} style={{
                 ...S.bSm(cur===c?CLR[c]?.bg||"#888":"transparent",cur===c?"#fff":CLR[c]?.bg||"#888"),
                 border:`1.5px solid ${CLR[c]?.bg||"#888"}`,padding:"3px 8px",fontSize:10,
                 opacity:cur===c?1:.6
               }}>{CLR[c]?.lb||c}</button>))}
-            </div>
+            </div>}
           </div>
         );
       })}
@@ -471,7 +628,7 @@ function BomEditor({pid,variantKey,profile,PRODUCTS,PARTS,CROSS,CLR,onSave,onClo
 
     <div style={{display:"flex",gap:8}}>
       <button onClick={onClose} style={{...S.btn(dark?"#252836":"#e0e3ea",tx),flex:1,height:40,borderRadius:10}}>Cancel</button>
-      <button onClick={()=>{if(!canSave)return;onSave(pid,baseColor,mapping)}} disabled={!canSave} style={{...S.btn(okC),flex:1,height:40,borderRadius:10,opacity:canSave?1:.5}}>💾 Save Recipe</button>
+      <button onClick={handleSave} disabled={!canSave} style={{...S.btn(okC),flex:1,height:40,borderRadius:10,opacity:canSave?1:.5}}>💾 Save Recipe</button>
     </div>
   </div>);
 }
@@ -487,6 +644,7 @@ function App(){
   const[CROSS,setCross]=useState(DEF_CROSS);
   const[asmRules,setAsmRules]=useState(DEF_ASM);
   const[bomProfiles,setBomProfiles]=useState(DEF_BOM);
+  const[SUBASM,setSubAsm]=useState(DEF_SUBASM);
   
   const[mainTab,setMainTab]=useState("dash");
   const[prodTab,setProdTab]=useState("sprinter");
@@ -501,6 +659,7 @@ function App(){
   const[loaded,setLoaded]=useState(false);
   const[syncing,setSyncing]=useState(false);
   const[dirty,setDirty]=useState(false);
+  const[connectionOk,setConnectionOk]=useState(true);
   const[lastSync,setLastSync]=useState(null);
   const[toast,setToast]=useState(null);
   const[toastAnim,setToastAnim]=useState("enter");
@@ -514,6 +673,7 @@ function App(){
   const[stockFilter,setStockFilter]=useState("all");
   const[editLogId,setEditLogId]=useState(null);
   const[editLogText,setEditLogText]=useState("");
+  const[confirmUndo,setConfirmUndo]=useState(null);
   const[partAdjust,setPartAdjust]=useState({});
   const[searchQuery,setSearchQuery]=useState("");
   const[showManage,setShowManage]=useState(null);
@@ -522,20 +682,42 @@ function App(){
   const[stockVerify,setStockVerify]=useState(false);
   const[dashExpanded,setDashExpanded]=useState({});
   const[showBomModal,setShowBomModal]=useState(false);
+  const[saColor,setSaColor]=useState({});
+  const[saQty,setSaQty]=useState({});
+  const[confirmSaBuild,setConfirmSaBuild]=useState(null); // {saId, color, qty}
 
   const toastTimerRef=useRef(null);const notesRef=useRef(null);const productNotesRef=useRef({});
   const dirtyRef=useRef(false);const modalOpenRef=useRef(false);
-  useEffect(()=>{modalOpenRef.current=!!showManage||!!bomEditing||showBomModal},[showManage,bomEditing,showBomModal]);
+  useEffect(()=>{modalOpenRef.current=!!showManage||!!bomEditing||showBomModal},[showManage,bomEditing,showBomModal,SUBASM]);
   useEffect(()=>{localStorage.setItem(THEME_KEY,JSON.stringify(dark))},[dark]);
 
   const allParts=useMemo(()=>[...PARTS,...CROSS],[PARTS,CROSS]);
+  const allItems=useMemo(()=>[...PARTS,...CROSS,...SUBASM],[PARTS,CROSS,SUBASM]);
+  // Get product parts (raw parts only, no sub-assemblies)
   const getProductParts=useCallback(pid=>[...PARTS.filter(p=>p.p===pid),...CROSS.filter(cp=>cp.products&&cp.products.includes(pid))],[PARTS,CROSS]);
+  // Get sub-assemblies for a product
+  const getProductSubAsm=useCallback(pid=>SUBASM.filter(s=>s.p===pid),[SUBASM]);
+  // Get parts that are NOT consumed by any sub-assembly (direct parts for final assembly)
+  const getDirectParts=useCallback(pid=>{
+    const sa=SUBASM.filter(s=>s.p===pid);
+    const saPartIds=new Set();sa.forEach(s=>s.components.forEach(c=>saPartIds.add(c.partId)));
+    return getProductParts(pid).filter(p=>!saPartIds.has(p.id));
+  },[SUBASM,getProductParts]);
+  // Get all things needed for final assembly: direct parts + sub-assemblies (as virtual parts)
+  const getAsmRequirements=useCallback(pid=>{
+    const direct=getDirectParts(pid);
+    const subs=getProductSubAsm(pid).map(s=>({...s,_isSub:true}));
+    return[...direct,...subs];
+  },[getDirectParts,getProductSubAsm]);
   
   // ═══ BOM-AWARE COLOR RESOLUTION ═══
   const getPartColorForAsm=useCallback((part,color,pid)=>{
     // First check BOM profile
     const bp=bomProfiles[pid]?.[color];
-    if(bp&&bp[part.id])return bp[part.id];
+    if(bp&&bp[part.id]){
+      if(bp[part.id]==="_skip")return "_skip"; // part is skipped
+      return bp[part.id];
+    }
     // Fallback: original logic
     if(part.c.length===1)return part.c[0];
     if(part.c.includes(color))return color;
@@ -545,35 +727,59 @@ function App(){
   },[asmRules,bomProfiles]);
 
   const getAsmColors=useCallback(pid=>{
-    const pp=getProductParts(pid);
+    const dp=getDirectParts(pid); // only direct parts (sub-assembly-consumed parts excluded)
+    const sa=getProductSubAsm(pid);
     // If BOM profiles exist, those are the assemblable variants
     const bpKeys=Object.keys(bomProfiles[pid]||{});
     if(bpKeys.length>0){
-      // Only allow colors that have complete BOM profiles
+      // Only allow colors that have complete BOM profiles (direct parts + sub-assemblies)
       return bpKeys.filter(c=>{
         const bp=bomProfiles[pid][c];
-        return pp.every(p=>bp[p.id]&&p.c.includes(bp[p.id]));
+        const partsOk=dp.every(p=>bp[p.id]==="_skip"||( bp[p.id]&&p.c.includes(bp[p.id]) ));
+        const subsOk=sa.every(s=>!bp[s.id]||bp[s.id]==="_skip"||s.c.includes(bp[s.id]));
+        return partsOk&&subsOk;
       });
     }
     // Fallback: old auto-detect
+    const pp=getProductParts(pid);
     const ac=new Set();
     pp.forEach(p=>p.c.forEach(c=>{if(c!=="universal"&&c!=="black"&&c!=="abs"&&c!=="purecrystal"&&c!=="orangecrystal"&&c!=="random"&&c!=="white")ac.add(c)}));
     return[...ac].filter(c=>pp.every(p=>getPartColorForAsm(p,c,pid)!==null));
-  },[getProductParts,getPartColorForAsm,bomProfiles]);
+  },[getDirectParts,getProductParts,getProductSubAsm,getPartColorForAsm,bomProfiles]);
 
   const calcMax=useCallback((pid,color,stk)=>{
-    const pp=getProductParts(pid);let m=Infinity;
-    for(const p of pp){
-      const mp=getPartColorForAsm(p,color,pid);
-      if(!mp)return 0;
-      m=Math.min(m,Math.floor((stk[p.id]?.[mp]||0)/(p.per||1)));
+    const reqs=getAsmRequirements(pid);let m=Infinity;
+    for(const p of reqs){
+      if(p._isSub){
+        const sc=getPartColorForAsm(p,color,pid)||color;
+        if(sc==="_skip")continue; // skipped part
+        const saStk=stk[p.id]?.[sc]||0;
+        m=Math.min(m,Math.floor(saStk/(p.per||1)));
+      } else {
+        const mp=getPartColorForAsm(p,color,pid);
+        if(mp==="_skip")continue; // skipped part
+        if(!mp)return 0;
+        m=Math.min(m,Math.floor((stk[p.id]?.[mp]||0)/(p.per||1)));
+      }
     }
     return m===Infinity?0:m;
-  },[getProductParts,getPartColorForAsm]);
+  },[getAsmRequirements,getPartColorForAsm]);
+  // Calculate max sub-assemblies buildable
+  const calcSubAsmMax=useCallback((sa,color,stk)=>{
+    let m=Infinity;
+    for(const comp of sa.components){
+      const part=allParts.find(p=>p.id===comp.partId);
+      if(!part)return 0;
+      const mc=(comp.colorMap&&comp.colorMap[color])||comp.color||( part.c.includes(color)?color:(part.c.length===1?part.c[0]:null) );
+      if(!mc)return 0;
+      m=Math.min(m,Math.floor((stk[comp.partId]?.[mc]||0)/(comp.per||1)));
+    }
+    return m===Infinity?0:m;
+  },[allParts]);
 
   const showToast=useCallback((msg,type="ok")=>{clearTimeout(toastTimerRef.current);setToastAnim("enter");setToast({msg,type});toastTimerRef.current=setTimeout(()=>{setToastAnim("exit");setTimeout(()=>setToast(null),250)},2200)},[]);
 
-  const serialize=useCallback(()=>({stock,logs:logs.slice(0,2000),confirmed,notes,productNotes,productThresholds,threshold,colors:CLR,products:PRODUCTS,parts:PARTS,crossParts:CROSS,asmRules,bomProfiles,updatedAt:Date.now()}),[stock,logs,confirmed,notes,productNotes,productThresholds,threshold,CLR,PRODUCTS,PARTS,CROSS,asmRules,bomProfiles]);
+  const serialize=useCallback(()=>({stock,logs:logs.slice(0,2000),confirmed,notes,productNotes,productThresholds,threshold,colors:CLR,products:PRODUCTS,parts:PARTS,crossParts:CROSS,asmRules,bomProfiles,subAssemblies:SUBASM,updatedAt:Date.now()}),[stock,logs,confirmed,notes,productNotes,productThresholds,threshold,CLR,PRODUCTS,PARTS,CROSS,asmRules,bomProfiles,SUBASM]);
   const serializeRef=useRef(serialize);serializeRef.current=serialize;
 
   const loadData=useCallback((d)=>{
@@ -581,9 +787,12 @@ function App(){
     if(d.products)setProducts(d.products);if(d.parts)setParts(d.parts);
     if(d.crossParts!==undefined)setCross(d.crossParts||[]);if(d.asmRules)setAsmRules(d.asmRules||{});
     if(d.bomProfiles!==undefined)setBomProfiles(d.bomProfiles||{});
+    if(d.subAssemblies!==undefined)setSubAsm(d.subAssemblies||[]);
     const ap=[...(d.parts||DEF_PARTS),...(d.crossParts||DEF_CROSS)];
+    const saList=d.subAssemblies||[];
     const mg={};ap.forEach(p=>{mg[p.id]={};p.c.forEach(c=>{mg[p.id][c]=0})});
-    Object.keys(d.stock||{}).forEach(k=>{if(mg[k]||ap.find(p=>p.id===k))mg[k]={...(mg[k]||{}),...d.stock[k]}});
+    saList.forEach(s=>{mg[s.id]={};s.c.forEach(c=>{mg[s.id][c]=0})});
+    Object.keys(d.stock||{}).forEach(k=>{if(mg[k]||ap.find(p=>p.id===k)||saList.find(s=>s.id===k))mg[k]={...(mg[k]||{}),...d.stock[k]}});
     setStock(mg);setLogs(d.logs||[]);setConfirmed(d.confirmed||{});
     if(d.threshold)setThreshold(d.threshold);if(d.productThresholds)setProductThresholds(d.productThresholds);
     if(d.notes!=null)setNotes(d.notes);if(d.productNotes)setProductNotes(d.productNotes);
@@ -596,13 +805,13 @@ function App(){
     setSyncing(true);
     try{
       const r=await fetch(`${FB_URL}${FB_PATH}.json?_t=${Date.now()}`,{cache:"no-store"});
-      if(!r.ok){console.error("Pull Error:",r.status);setSyncing(false);return false}
+      if(!r.ok){console.error("Pull Error:",r.status);setConnectionOk(false);setSyncing(false);return false}
       const d=await r.json();
       if(d&&(d.stock||d.products)){
         loadData(d);localStorage.setItem(STORE_KEY,JSON.stringify(d));
-        setLastSync(new Date());setDirty(false);dirtyRef.current=false;setSyncing(false);return true;
+        setLastSync(new Date());setDirty(false);dirtyRef.current=false;setConnectionOk(true);setSyncing(false);return true;
       }
-    }catch(e){console.error("Pull Error:",e)}
+    }catch(e){console.error("Pull Error:",e);setConnectionOk(false)}
     setSyncing(false);return false;
   },[loadData]);
 
@@ -612,9 +821,9 @@ function App(){
     try{
       const payload=data||serializeRef.current();
       const r=await fetch(`${FB_URL}${FB_PATH}.json`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-      if(r.ok){localStorage.setItem(STORE_KEY,JSON.stringify(payload));setLastSync(new Date());setDirty(false);dirtyRef.current=false;showToast("☁️ Synced!")}
-      else{console.error("Push Error:",r.status,await r.text());showToast("Save failed","err")}
-    }catch(e){console.error("Push Error:",e);showToast("Offline","wrn")}
+      if(r.ok){localStorage.setItem(STORE_KEY,JSON.stringify(payload));setLastSync(new Date());setDirty(false);dirtyRef.current=false;setConnectionOk(true);showToast("☁️ Synced!")}
+      else{console.error("Push Error:",r.status,await r.text());setConnectionOk(false);showToast("Save failed","err")}
+    }catch(e){console.error("Push Error:",e);setConnectionOk(false);showToast("Offline","wrn")}
     setSyncing(false);
   },[showToast]);
 
@@ -624,9 +833,9 @@ function App(){
       notes:ov.notes!==undefined?ov.notes:notes,productNotes:ov.productNotes||productNotes,
       productThresholds:ov.productThresholds||productThresholds,threshold:ov.threshold!==undefined?ov.threshold:threshold,
       colors:ov.colors||CLR,products:ov.products||PRODUCTS,parts:ov.parts||PARTS,crossParts:ov.crossParts||CROSS,
-      asmRules:ov.asmRules||asmRules,bomProfiles:ov.bomProfiles||bomProfiles,updatedAt:Date.now()};
+      asmRules:ov.asmRules||asmRules,bomProfiles:ov.bomProfiles||bomProfiles,subAssemblies:ov.subAssemblies||SUBASM,updatedAt:Date.now()};
     localStorage.setItem(STORE_KEY,JSON.stringify(d));pushCloud(d);
-  },[stock,logs,confirmed,notes,productNotes,productThresholds,threshold,CLR,PRODUCTS,PARTS,CROSS,asmRules,bomProfiles,pushCloud]);
+  },[stock,logs,confirmed,notes,productNotes,productThresholds,threshold,CLR,PRODUCTS,PARTS,CROSS,asmRules,bomProfiles,SUBASM,pushCloud]);
 
   // --- REAL-TIME EVENT SOURCE ---
   useEffect(()=>{
@@ -636,12 +845,12 @@ function App(){
         es=new EventSource(`${FB_URL}${FB_PATH}.json`);
         es.addEventListener("put",(ev)=>{
           try{const payload=JSON.parse(ev.data);const d=payload.data;if(!d)return;if(dirtyRef.current)return;
-            if(payload.path==="/"){if(d.stock||d.products){loadData(d);localStorage.setItem(STORE_KEY,JSON.stringify(d));setLastSync(new Date());setDirty(false);dirtyRef.current=false}}
+            if(payload.path==="/"){if(d.stock||d.products){loadData(d);localStorage.setItem(STORE_KEY,JSON.stringify(d));setLastSync(new Date());setDirty(false);dirtyRef.current=false;setConnectionOk(true)}}
             else{if(!dirtyRef.current)pullCloud()}
           }catch(e){}
         });
         es.addEventListener("patch",()=>{if(!dirtyRef.current)pullCloud()});
-        es.onerror=()=>{es.close();reconnectTimer=setTimeout(connect,3000)};
+        es.onerror=()=>{es.close();setConnectionOk(false);reconnectTimer=setTimeout(connect,3000)};
       }catch(e){reconnectTimer=setTimeout(connect,5000)}
     };
     connect();
@@ -661,21 +870,53 @@ function App(){
   
   useEffect(()=>{(async()=>{const l=localStorage.getItem(STORE_KEY);if(l){try{loadData(JSON.parse(l))}catch(e){}}setLoaded(true);await pullCloud()})()},[pullCloud,loadData]);
 
-  const mkLog=(a,d,p)=>({id:genId(),ts:Date.now(),a,d,p});
+  const mkLog=(a,d,p,changes)=>({id:genId(),ts:Date.now(),a,d,p,...(changes?{changes}:{})});
   const handleSetPA=useCallback((k,v)=>setPartAdjust(p=>({...p,[k]:v})),[]);
 
   const doAssemble=pid=>{const ac=getAsmColors(pid);const c=asmColor[pid]||ac[0];const q=parseInt(asmQty[pid])||0;if(!c){showToast("No color","err");return}if(q<=0){showToast("Enter qty","err");return}setConfirmAsm({pid,color:c,qty:q})};
-  const confirmDoAssemble=()=>{const{pid,color,qty}=confirmAsm;const pp=getProductParts(pid);const ns={...stock};
-    pp.forEach(p=>{const m=getPartColorForAsm(p,color,pid);if(!m)return;if(!ns[p.id])ns[p.id]={};ns[p.id][m]=Math.max(0,(ns[p.id][m]||0)-qty*(p.per||1))});
-    const nm=PRODUCTS[pid]?.name||pid;const e=mkLog("assemble",`${qty} ${CLR[color]?.lb||color} ${nm}${qty>1?"s":""}`,pid);
+  const confirmDoAssemble=()=>{const{pid,color,qty}=confirmAsm;const reqs=getAsmRequirements(pid);const ns={...stock};
+    const bp=bomProfiles[pid]?.[color];const changes=[];
+    reqs.forEach(p=>{
+      if(bp&&bp[p.id]==="_skip")return;
+      if(p._isSub){
+        const sc=getPartColorForAsm(p,color,pid)||color;
+        if(!ns[p.id])ns[p.id]={};const before=ns[p.id][sc]||0;ns[p.id][sc]=Math.max(0,before-qty*(p.per||1));changes.push({partId:p.id,color:sc,before,after:ns[p.id][sc]});
+      } else {
+        const m=getPartColorForAsm(p,color,pid);if(!m)return;if(!ns[p.id])ns[p.id]={};const before=ns[p.id][m]||0;ns[p.id][m]=Math.max(0,before-qty*(p.per||1));changes.push({partId:p.id,color:m,before,after:ns[p.id][m]});
+      }
+    });
+    const nm=PRODUCTS[pid]?.name||pid;const e=mkLog("assemble",`${qty} ${CLR[color]?.lb||color} ${nm}${qty>1?"s":""}`,pid,changes);
     const nl=[e,...logs].slice(0,2000);setStock(ns);setLogs(nl);setAsmQty(q=>({...q,[pid]:""}));setConfirmAsm(null);markDirty({stock:ns,logs:nl});showToast(`Assembled ${qty} ${CLR[color]?.lb} ${nm}!`)};
 
-  const saveStock=(id,c)=>{const v=parseInt(editVal);if(isNaN(v)){showToast("Enter number","err");return}const ns={...stock};if(!ns[id])ns[id]={};const o=ns[id][c]||0;const nv=Math.max(0,v);ns[id]={...ns[id],[c]:nv};const p=allParts.find(x=>x.id===id);const e=mkLog("stock_edit",`${p?.n||id} [${CLR[c]?.lb||c}]: ${o} → ${nv}`,p?.p||"cross");const nl=[e,...logs].slice(0,2000);setStock(ns);setLogs(nl);setEditing(null);setEditVal("");markDirty({stock:ns,logs:nl});showToast("Updated")};
-  const adjustStock=(id,c,d)=>{const iv=partAdjust[`${id}_${c}`];const amt=iv?parseInt(iv):Math.abs(d);if(isNaN(amt))return;const ad=d>0?amt:-amt;const ns={...stock};if(!ns[id])ns[id]={};const o=ns[id][c]||0;const nv=Math.max(0,o+ad);ns[id]={...ns[id],[c]:nv};const p=allParts.find(x=>x.id===id);const e=mkLog("adjust",`${p?.n||id} [${CLR[c]?.lb||c}]: ${o} → ${nv} (${nv>o?"+":""}${nv-o})`,p?.p||"cross");const nl=[e,...logs].slice(0,2000);setStock(ns);setLogs(nl);markDirty({stock:ns,logs:nl});setPartAdjust(p=>({...p,[`${id}_${c}`]:""}))};
+  // ═══ SUB-ASSEMBLY BUILD ═══
+  const doSubAsmBuild=(saId)=>{
+    const sa=SUBASM.find(s=>s.id===saId);if(!sa)return;
+    const c=saColor[saId]||sa.c[0];const q=parseInt(saQty[saId])||0;
+    if(!c){showToast("No color","err");return}if(q<=0){showToast("Enter qty","err");return}
+    setConfirmSaBuild({saId,color:c,qty:q});
+  };
+  const confirmDoSubAsmBuild=()=>{
+    const{saId,color,qty}=confirmSaBuild;const sa=SUBASM.find(s=>s.id===saId);if(!sa)return;
+    const ns={...stock};const changes=[];
+    sa.components.forEach(comp=>{
+      const part=allParts.find(p=>p.id===comp.partId);if(!part)return;
+      const mc=(comp.colorMap&&comp.colorMap[color])||comp.color||(part.c.includes(color)?color:(part.c.length===1?part.c[0]:null));if(!mc)return;
+      if(!ns[comp.partId])ns[comp.partId]={};
+      const before=ns[comp.partId][mc]||0;ns[comp.partId][mc]=Math.max(0,before-qty*(comp.per||1));changes.push({partId:comp.partId,color:mc,before,after:ns[comp.partId][mc]});
+    });
+    if(!ns[saId])ns[saId]={};
+    const saBefore=ns[saId][color]||0;ns[saId][color]=saBefore+qty;changes.push({partId:saId,color,before:saBefore,after:ns[saId][color]});
+    const e=mkLog("sub_build",`Built ${qty} ${CLR[color]?.lb||color} ${sa.n}`,sa.p,changes);
+    const nl=[e,...logs].slice(0,2000);setStock(ns);setLogs(nl);setSaQty(q=>({...q,[saId]:""}));setConfirmSaBuild(null);markDirty({stock:ns,logs:nl});showToast(`🔧 Built ${qty} ${CLR[color]?.lb} ${sa.n}!`);
+  };
+
+  const saveStock=(id,c)=>{const v=parseInt(editVal);if(isNaN(v)){showToast("Enter number","err");return}const ns={...stock};if(!ns[id])ns[id]={};const o=ns[id][c]||0;const nv=Math.max(0,v);ns[id]={...ns[id],[c]:nv};const p=allItems.find(x=>x.id===id);const changes=[{partId:id,color:c,before:o,after:nv}];const e=mkLog("stock_edit",`${p?.n||id} [${CLR[c]?.lb||c}]: ${o} → ${nv}`,p?.p||"cross",changes);const nl=[e,...logs].slice(0,2000);setStock(ns);setLogs(nl);setEditing(null);setEditVal("");markDirty({stock:ns,logs:nl});showToast("Updated")};
+  const adjustStock=(id,c,d)=>{const iv=partAdjust[`${id}_${c}`];const amt=iv?parseInt(iv):Math.abs(d);if(isNaN(amt))return;const ad=d>0?amt:-amt;const ns={...stock};if(!ns[id])ns[id]={};const o=ns[id][c]||0;const nv=Math.max(0,o+ad);ns[id]={...ns[id],[c]:nv};const p=allItems.find(x=>x.id===id);const changes=[{partId:id,color:c,before:o,after:nv}];const e=mkLog("adjust",`${p?.n||id} [${CLR[c]?.lb||c}]: ${o} → ${nv} (${nv>o?"+":""}${nv-o})`,p?.p||"cross",changes);const nl=[e,...logs].slice(0,2000);setStock(ns);setLogs(nl);markDirty({stock:ns,logs:nl});setPartAdjust(p=>({...p,[`${id}_${c}`]:""}))};
   const toggleConfirm=id=>{const nc={...confirmed};if(nc[id])delete nc[id];else nc[id]=Date.now();setConfirmed(nc);markDirty({confirmed:nc})};
   const resetConfirm=()=>{setConfirmed({});markDirty({confirmed:{}});showToast("Reset")};
   const confirmAll=()=>{const nc={};allParts.forEach(p=>nc[p.id]=Date.now());setConfirmed(nc);markDirty({confirmed:nc});showToast("All confirmed")};
   const deleteLog=id=>{const nl=logs.filter(l=>l.id!==id);setLogs(nl);markDirty({logs:nl})};
+  const undoLog=id=>{const l=logs.find(x=>x.id===id);if(!l||!l.changes)return;const ns={...stock};l.changes.forEach(ch=>{if(!ns[ch.partId])ns[ch.partId]={};ns[ch.partId][ch.color]=ch.before});const nl=logs.filter(x=>x.id!==id);setStock(ns);setLogs(nl);markDirty({stock:ns,logs:nl});showToast("↩️ Undone")};
   const clearLogs=()=>{setLogs([]);markDirty({logs:[]});showToast("Cleared")};
   const saveLogEdit=id=>{const nl=logs.map(l=>l.id===id?{...l,d:editLogText,editedAt:Date.now()}:l);setLogs(nl);setEditLogId(null);markDirty({logs:nl})};
   const handleNotes=v=>{setNotes(v);clearTimeout(notesRef.current);notesRef.current=setTimeout(()=>markDirty({notes:v}),800)};
@@ -686,13 +927,18 @@ function App(){
   const deleteColor=k=>{if(k==="universal")return;const nc={...CLR};delete nc[k];setCLR(nc);markDirty({colors:nc})};
   const addProduct=(k,n,i)=>{const np={...PRODUCTS,[k]:{name:n,icon:i}};setProducts(np);markDirty({products:np});setProdTab(k)};
   const editProduct=(k,n,i)=>{const np={...PRODUCTS,[k]:{...PRODUCTS[k],name:n,icon:i}};setProducts(np);markDirty({products:np})};
-  const deleteProduct=k=>{const np={...PRODUCTS};delete np[k];setProducts(np);const fp=PARTS.filter(p=>p.p!==k);setParts(fp);const fc=CROSS.map(cp=>({...cp,products:(cp.products||[]).filter(x=>x!==k)}));setCross(fc);const nb={...bomProfiles};delete nb[k];setBomProfiles(nb);if(prodTab===k)setProdTab(Object.keys(np)[0]||"");markDirty({products:np,parts:fp,crossParts:fc,bomProfiles:nb})};
+  const deleteProduct=k=>{const np={...PRODUCTS};delete np[k];setProducts(np);const fp=PARTS.filter(p=>p.p!==k);setParts(fp);const fc=CROSS.map(cp=>({...cp,products:(cp.products||[]).filter(x=>x!==k)}));setCross(fc);const nb={...bomProfiles};delete nb[k];setBomProfiles(nb);const fsa=SUBASM.filter(s=>s.p!==k);setSubAsm(fsa);if(prodTab===k)setProdTab(Object.keys(np)[0]||"");markDirty({products:np,parts:fp,crossParts:fc,bomProfiles:nb,subAssemblies:fsa})};
   const addPart=(n,pid,c,per)=>{const id=`${pid.slice(0,2)}_${genId()}`;const np=[...PARTS,{id,n,p:pid,c,per:per||1}];setParts(np);const ns={...stock};ns[id]={};c.forEach(k=>{ns[id][k]=0});setStock(ns);markDirty({parts:np,stock:ns})};
   const editPart=(id,n,c,per)=>{const np=PARTS.map(p=>p.id===id?{...p,n,c,per:per||1}:p);setParts(np);const ns={...stock};if(!ns[id])ns[id]={};c.forEach(k=>{if(ns[id][k]===undefined)ns[id][k]=0});setStock(ns);markDirty({parts:np,stock:ns})};
   const deletePart=id=>{const np=PARTS.filter(p=>p.id!==id);setParts(np);const ns={...stock};delete ns[id];setStock(ns);markDirty({parts:np,stock:ns})};
   const addCross=(n,pids,c,per)=>{const id=`cx_${genId()}`;const nc=[...CROSS,{id,n,c,per:per||1,products:pids}];setCross(nc);const ns={...stock};ns[id]={};c.forEach(k=>{ns[id][k]=0});setStock(ns);markDirty({crossParts:nc,stock:ns})};
   const editCross=(id,n,pids,c,per)=>{const nc=CROSS.map(p=>p.id===id?{...p,n,products:pids,c,per:per||1}:p);setCross(nc);const ns={...stock};if(!ns[id])ns[id]={};c.forEach(k=>{if(ns[id][k]===undefined)ns[id][k]=0});setStock(ns);markDirty({crossParts:nc,stock:ns})};
   const deleteCross=id=>{const nc=CROSS.filter(p=>p.id!==id);setCross(nc);const ns={...stock};delete ns[id];setStock(ns);markDirty({crossParts:nc,stock:ns})};
+
+  // ═══ SUB-ASSEMBLY CRUD ═══
+  const addSubAsm=(n,pid,c,components,per)=>{const id=`sa_${genId()}`;const ns2=[...SUBASM,{id,n,p:pid,c,components,per:per||1}];setSubAsm(ns2);const ns={...stock};ns[id]={};c.forEach(k=>{ns[id][k]=0});setStock(ns);markDirty({subAssemblies:ns2,stock:ns})};
+  const editSubAsm=(id,n,c,components,per)=>{const ns2=SUBASM.map(s=>s.id===id?{...s,n,c,components,per:per||1}:s);setSubAsm(ns2);const ns={...stock};if(!ns[id])ns[id]={};c.forEach(k=>{if(ns[id][k]===undefined)ns[id][k]=0});setStock(ns);markDirty({subAssemblies:ns2,stock:ns})};
+  const deleteSubAsm=id=>{const ns2=SUBASM.filter(s=>s.id!==id);setSubAsm(ns2);const ns={...stock};delete ns[id];setStock(ns);markDirty({subAssemblies:ns2,stock:ns})};
 
   // ═══ BOM PROFILE CRUD ═══
   const saveBomProfile=(pid,variantKey,mapping)=>{
@@ -706,11 +952,11 @@ function App(){
 
   const doExportJSON=()=>{const p=serialize();p.exportedAt=new Date().toISOString();dlFile(new Blob([JSON.stringify(p,null,2)],{type:"application/json"}),`littlestar_${new Date().toISOString().slice(0,10)}.json`)};
   const doExportCSV=()=>{let csv="Product,Part,Color,Stock\n";allParts.forEach(p=>{const pr=p.products?"Cross":(PRODUCTS[p.p]?.name||p.p);p.c.forEach(c=>{csv+=`"${pr}","${p.n}","${CLR[c]?.lb||c}",${stock[p.id]?.[c]||0}\n`})});dlFile(new Blob([csv],{type:"text/csv"}),`littlestar_${new Date().toISOString().slice(0,10)}.csv`)};
-  const handleImport=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.stock||d.products){const mg=loadData(d);markDirty({stock:mg,logs:d.logs||[],confirmed:d.confirmed||{},colors:d.colors||CLR,products:d.products||PRODUCTS,parts:d.parts||PARTS,crossParts:d.crossParts||CROSS,asmRules:d.asmRules||asmRules,bomProfiles:d.bomProfiles||bomProfiles});showToast("Imported!")}else showToast("Invalid","err")}catch(err){showToast("Error","err")}};rd.readAsText(f);e.target.value=""};
-  const wipeData=()=>{const es={};allParts.forEach(p=>{es[p.id]={};p.c.forEach(c=>{es[p.id][c]=0})});setStock(es);setLogs([]);setConfirmed({});setNotes("");setProductNotes({});setProductThresholds({});markDirty({stock:es,logs:[],confirmed:{},notes:"",productNotes:{},productThresholds:{}});showToast("Wiped","err")};
-  const resetNumbers=()=>{const es={};allParts.forEach(p=>{es[p.id]={};p.c.forEach(c=>{es[p.id][c]=0})});setStock(es);setLogs([]);setConfirmed({});markDirty({stock:es,logs:[],confirmed:{}});showToast("Numbers reset, config kept")};
-  const saveConfig=()=>{const cfg={colors:CLR,products:PRODUCTS,parts:PARTS,crossParts:CROSS,asmRules,bomProfiles,savedAt:new Date().toISOString()};dlFile(new Blob([JSON.stringify(cfg,null,2)],{type:"application/json"}),`littlestar_config_${new Date().toISOString().slice(0,10)}.json`);showToast("💾 Config saved!")};
-  const handleLoadConfig=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.colors||d.products||d.parts){if(d.colors)setCLR(p=>({...DEF_COLORS,...d.colors}));if(d.products)setProducts(d.products);if(d.parts)setParts(d.parts);if(d.crossParts!==undefined)setCross(d.crossParts||[]);if(d.asmRules)setAsmRules(d.asmRules);if(d.bomProfiles!==undefined)setBomProfiles(d.bomProfiles||{});const ap=[...(d.parts||PARTS),...(d.crossParts||CROSS)];const ns={...stock};ap.forEach(p=>{if(!ns[p.id]){ns[p.id]={};p.c.forEach(c=>{ns[p.id][c]=0})}else{p.c.forEach(c=>{if(ns[p.id][c]===undefined)ns[p.id][c]=0})}});setStock(ns);markDirty({colors:d.colors||CLR,products:d.products||PRODUCTS,parts:d.parts||PARTS,crossParts:d.crossParts||CROSS,asmRules:d.asmRules||asmRules,bomProfiles:d.bomProfiles||bomProfiles,stock:ns});showToast("📂 Config loaded!")}else showToast("Invalid config","err")}catch(err){showToast("Error reading file","err")}};rd.readAsText(f);e.target.value=""};
+  const handleImport=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.stock||d.products){const mg=loadData(d);markDirty({stock:mg,logs:d.logs||[],confirmed:d.confirmed||{},colors:d.colors||CLR,products:d.products||PRODUCTS,parts:d.parts||PARTS,crossParts:d.crossParts||CROSS,asmRules:d.asmRules||asmRules,bomProfiles:d.bomProfiles||bomProfiles,subAssemblies:d.subAssemblies||SUBASM});showToast("Imported!")}else showToast("Invalid","err")}catch(err){showToast("Error","err")}};rd.readAsText(f);e.target.value=""};
+  const wipeData=()=>{const es={};allItems.forEach(p=>{es[p.id]={};p.c.forEach(c=>{es[p.id][c]=0})});setStock(es);setLogs([]);setConfirmed({});setNotes("");setProductNotes({});setProductThresholds({});markDirty({stock:es,logs:[],confirmed:{},notes:"",productNotes:{},productThresholds:{}});showToast("Wiped","err")};
+  const resetNumbers=()=>{const es={};allItems.forEach(p=>{es[p.id]={};p.c.forEach(c=>{es[p.id][c]=0})});setStock(es);setLogs([]);setConfirmed({});markDirty({stock:es,logs:[],confirmed:{}});showToast("Numbers reset, config kept")};
+  const saveConfig=()=>{const cfg={colors:CLR,products:PRODUCTS,parts:PARTS,crossParts:CROSS,asmRules,bomProfiles,subAssemblies:SUBASM,savedAt:new Date().toISOString()};dlFile(new Blob([JSON.stringify(cfg,null,2)],{type:"application/json"}),`littlestar_config_${new Date().toISOString().slice(0,10)}.json`);showToast("💾 Config saved!")};
+  const handleLoadConfig=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.colors||d.products||d.parts){if(d.colors)setCLR(p=>({...DEF_COLORS,...d.colors}));if(d.products)setProducts(d.products);if(d.parts)setParts(d.parts);if(d.crossParts!==undefined)setCross(d.crossParts||[]);if(d.asmRules)setAsmRules(d.asmRules);if(d.bomProfiles!==undefined)setBomProfiles(d.bomProfiles||{});if(d.subAssemblies!==undefined)setSubAsm(d.subAssemblies||[]);const ap=[...(d.parts||PARTS),...(d.crossParts||CROSS)];const saL=d.subAssemblies||[];const ns={...stock};ap.forEach(p=>{if(!ns[p.id]){ns[p.id]={};p.c.forEach(c=>{ns[p.id][c]=0})}else{p.c.forEach(c=>{if(ns[p.id][c]===undefined)ns[p.id][c]=0})}});saL.forEach(s=>{if(!ns[s.id]){ns[s.id]={};s.c.forEach(c=>{ns[s.id][c]=0})}else{s.c.forEach(c=>{if(ns[s.id][c]===undefined)ns[s.id][c]=0})}});setStock(ns);markDirty({colors:d.colors||CLR,products:d.products||PRODUCTS,parts:d.parts||PARTS,crossParts:d.crossParts||CROSS,asmRules:d.asmRules||asmRules,bomProfiles:d.bomProfiles||bomProfiles,subAssemblies:d.subAssemblies||SUBASM,stock:ns});showToast("📂 Config loaded!")}else showToast("Invalid config","err")}catch(err){showToast("Error reading file","err")}};rd.readAsText(f);e.target.value=""};
   const dataSize=useMemo(()=>(new Blob([JSON.stringify(serialize())]).size/1024).toFixed(1),[serialize]);
 
   const bg=dark?"#0a0c14":"#f0f2f7",card=dark?"#13162088":"#ffffffcc",cb=dark?"#1e2235":"#dfe2ea",tx=dark?"#e8eaf0":"#1a1a2e",txd=dark?"#6b7194":"#7c7f96",acc="#4f8cff",okC="#22c55e",dnC="#ef4444",wnC="#f59e0b";
@@ -759,6 +1005,22 @@ function App(){
             <span style={{fontSize:16,color:txd,transform:isExp?"rotate(90deg)":"none",transition:"transform .2s",marginLeft:2}}>›</span>
           </div>
           {isExp&&(<div style={{marginTop:12,borderTop:`1px solid ${cb}`,paddingTop:10}}>
+            {/* Sub-assembly stock */}
+            {getProductSubAsm(pid).length>0&&<>
+              <div style={{fontSize:10,fontWeight:900,color:acc,marginBottom:4,textTransform:"uppercase",letterSpacing:.5}}>🔧 Sub-Assemblies</div>
+              {getProductSubAsm(pid).map(s=>s.c.map(c=>{
+                const val=stock[s.id]?.[c]||0;
+                const at=productThresholds[pid]!==undefined?productThresholds[pid]:threshold;
+                const isLow=val<=at;
+                return(<div key={`${s.id}_${c}`} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 2px",gap:6}}>
+                  <span style={{fontSize:13,fontWeight:700,flex:1,color:txd}}>{s.n}<span style={{fontSize:9,background:acc+"22",color:acc,padding:"1px 5px",borderRadius:4,fontWeight:800,marginLeft:4}}>SUB-ASSY</span></span>
+                  <CBadge color={c} CLR={CLR} size={10}/>
+                  <span style={{fontSize:14,fontWeight:900,color:isLow?dnC:okC,minWidth:36,textAlign:"right"}}>{val.toLocaleString()}</span>
+                </div>);
+              }))}
+              <div style={{height:6}}/>
+            </>}
+            {/* Regular parts */}
             {pp.map(p=>{
               const isCross=!!p.products;
               return(<div key={p.id}>
@@ -802,9 +1064,11 @@ function App(){
   };
 
   // ═══ RENDER: ASSEMBLY TAB ═══
-  const renderProd=pid=>{let pp=getProductParts(pid);if(searchQuery)pp=pp.filter(p=>p.n.toLowerCase().includes(searchQuery.toLowerCase()));const ac=getAsmColors(pid);const cl=pp.filter(p=>p.c.length>1||(!["universal","black","abs","purecrystal","orangecrystal","random","white"].includes(p.c[0]))),uv=pp.filter(p=>p.c.length===1&&["universal","black","abs","purecrystal","orangecrystal","random","white"].includes(p.c[0]));const sc=asmColor[pid]||ac[0]||"";
+  const renderProd=pid=>{let pp=getProductParts(pid);if(searchQuery)pp=pp.filter(p=>p.n.toLowerCase().includes(searchQuery.toLowerCase()));const ac=getAsmColors(pid);const cl=pp.filter(p=>p.c.length>1||(!(["universal","black","abs","purecrystal","orangecrystal","random","white"].includes(p.c[0])))),uv=pp.filter(p=>p.c.length===1&&["universal","black","abs","purecrystal","orangecrystal","random","white"].includes(p.c[0]));const sc=asmColor[pid]||ac[0]||"";
     const hasBom=Object.keys(bomProfiles[pid]||{}).length>0;
+    const productSubs=getProductSubAsm(pid);
     return(<div>
+      {/* Assembly card on TOP */}
       <div style={{...S.crd,border:`1.5px solid ${acc}30`,padding:"12px 14px",background:dark?`linear-gradient(135deg,#131620 0%,${acc}08 100%)`:`linear-gradient(135deg,#fff 0%,${acc}06 100%)`}}>
         <div style={{fontSize:15,fontWeight:900,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>⚙️ Assemble {PRODUCTS[pid]?.name}
           {!hasBom&&<span style={{fontSize:9,background:wnC+"22",color:wnC,padding:"2px 6px",borderRadius:6,fontWeight:800}}>No BOM</span>}
@@ -815,6 +1079,44 @@ function App(){
           <div style={{display:"flex",gap:6}}>{ac.map(c=>{const mx=calcMax(pid,c,stock);return(<div key={c} style={{flex:1,background:dark?"#0e1019":"#f5f6f9",borderRadius:8,padding:"7px 8px",textAlign:"center",border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}><div style={{fontSize:20,fontWeight:900,color:CLR[c]?.bg||"#888"}}>{mx}</div><div style={{fontSize:9,fontWeight:800,color:txd,marginTop:1}}>max {CLR[c]?.lb||c}</div></div>)})}</div>
         </>):(<div style={{textAlign:"center",color:txd,fontSize:12,padding:8}}>{hasBom?"All BOM profiles need valid color mappings.":"Create BOM recipes in the BOM tab to enable assembly."}</div>)}
       </div>
+      {/* Sub-Assembly Build Cards */}
+      {productSubs.length>0&&<>
+        <div style={{padding:"8px 10px 2px",fontSize:11,fontWeight:900,color:acc,textTransform:"uppercase",letterSpacing:1}}>🔧 Sub-Assemblies ({productSubs.length})</div>
+        {productSubs.map(sa=>{
+          const saSc=saColor[sa.id]||sa.c[0]||"";
+          return(<div key={sa.id} style={{...S.crd,border:`1.5px solid ${wnC}30`,padding:"12px 14px",background:dark?`linear-gradient(135deg,#131620 0%,${wnC}06 100%)`:`linear-gradient(135deg,#fff 0%,${wnC}04 100%)`}}>
+            <div style={{fontSize:14,fontWeight:900,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>🔧 Build {sa.n}
+              <span style={{fontSize:9,background:acc+"22",color:acc,padding:"2px 6px",borderRadius:6,fontWeight:800}}>SUB-ASSY</span>
+            </div>
+            <div style={{display:"flex",gap:5,marginBottom:8,flexWrap:"wrap"}}>{sa.c.map(c=>(
+              <button key={c} onClick={()=>setSaColor(a=>({...a,[sa.id]:c}))} style={{...S.btn(saSc===c?CLR[c]?.bg||"#888":"transparent",saSc===c?"#fff":CLR[c]?.bg||"#888"),border:`2px solid ${CLR[c]?.bg||"#888"}`,padding:"6px 10px",fontSize:11,flex:1,minWidth:45,boxShadow:saSc===c?`0 3px 12px ${CLR[c]?.gw||"transparent"}`:"none"}}>{CLR[c]?.lb||c}</button>
+            ))}</div>
+            <div style={{display:"flex",gap:6,marginBottom:8}}>
+              <input type="number" inputMode="numeric" placeholder="Qty..." value={saQty[sa.id]||""} onChange={e=>setSaQty(q=>({...q,[sa.id]:e.target.value}))} style={{...S.inp,flex:1,fontSize:14,height:34,fontWeight:800,textAlign:"center"}}/>
+              <button onClick={()=>doSubAsmBuild(sa.id)} style={{...S.btn(wnC),fontSize:13,padding:"0 14px",height:34,borderRadius:8}}>🔧 Build</button>
+            </div>
+            {/* Max buildable + stock */}
+            <div style={{display:"flex",gap:6}}>{sa.c.map(c=>{
+              const mx=calcSubAsmMax(sa,c,stock);
+              const stk=stock[sa.id]?.[c]||0;
+              return(<div key={c} style={{flex:1,background:dark?"#0e1019":"#f5f6f9",borderRadius:8,padding:"6px",textAlign:"center",border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
+                <div style={{fontSize:18,fontWeight:900,color:CLR[c]?.bg||"#888"}}>{mx}</div>
+                <div style={{fontSize:8,fontWeight:800,color:txd}}>max build</div>
+                <div style={{fontSize:12,fontWeight:900,color:stk>0?okC:txd,marginTop:2}}>📦 {stk}</div>
+                <div style={{fontSize:8,fontWeight:800,color:txd}}>in stock</div>
+              </div>);
+            })}</div>
+            {/* Component parts list */}
+            <div style={{marginTop:6,fontSize:10,color:txd,fontWeight:700}}>Components: {sa.components.map(comp=>{const pt=allParts.find(p=>p.id===comp.partId);return pt?(pt.n+(comp.per>1?` ×${comp.per}`:"")):"‐"}).join(", ")}</div>
+          </div>);
+        })}
+      </>
+      }
+      {/* Sub-assembly stock as PartRow */}
+      {productSubs.length>0&&<>
+        <div style={{padding:"8px 10px 2px",fontSize:11,fontWeight:900,color:acc,textTransform:"uppercase",letterSpacing:1}}>🔧 Sub-Assembly Stock ({productSubs.length})</div>
+        {productSubs.map(sa=><PartRow key={sa.id} part={{...sa,per:sa.per||1}} {...prp}/>)}
+      </>}
       {cl.length>0&&<div style={{padding:"8px 10px 2px",fontSize:11,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1}}>Colored ({cl.length})</div>}
       {cl.map(p=><PartRow key={p.id} part={p} {...prp}/>)}
       {uv.length>0&&<div style={{padding:"8px 10px 2px",fontSize:11,fontWeight:900,color:txd,textTransform:"uppercase",letterSpacing:1}}>Fixed Color ({uv.length})</div>}
@@ -877,7 +1179,7 @@ function App(){
         let bottleneck=null,bottleneckQty=Infinity;
         pp.forEach(p=>{
           const mc=prof[p.id];
-          if(mc){const av=Math.floor((stock[p.id]?.[mc]||0)/(p.per||1));if(av<bottleneckQty){bottleneckQty=av;bottleneck=p}}
+          if(mc&&mc!=="_skip"){const av=Math.floor((stock[p.id]?.[mc]||0)/(p.per||1));if(av<bottleneckQty){bottleneckQty=av;bottleneck=p}}
         });
 
         return(<div key={vk} style={{...S.crd,padding:"12px 14px",border:`1.5px solid ${CLR[vk]?.bg||"#888"}30`}}>
@@ -894,8 +1196,13 @@ function App(){
             {/* Parts list */}
             {pp.map(p=>{
               const mc=prof[p.id]||"?";
-              const stk=stock[p.id]?.[mc]||0;
-              const isBottle=p===bottleneck;
+              const isSkipped=mc==="_skip";
+              const stk=isSkipped?0:(stock[p.id]?.[mc]||0);
+              const isBottle=!isSkipped&&p===bottleneck;
+              if(isSkipped)return(<div key={p.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 8px",marginBottom:2,background:dark?"#0e1019":"#f5f6f9",borderRadius:6,border:`1px solid ${dark?"#1a1d2e":"#eceef3"}`,opacity:.45}}>
+                <span style={{fontWeight:800,fontSize:12,textDecoration:"line-through",flex:1}}>{p.n}</span>
+                <span style={{fontSize:9,color:dnC,fontWeight:800}}>SKIPPED</span>
+              </div>);
               return(<div key={p.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 8px",marginBottom:2,background:dark?"#0e1019":"#f5f6f9",borderRadius:6,border:isBottle?`1.5px solid ${dnC}44`:`1px solid ${dark?"#1a1d2e":"#eceef3"}`}}>
                 <div style={{flex:1}}>
                   <span style={{fontWeight:800,fontSize:12}}>{p.n}</span>
@@ -923,7 +1230,7 @@ function App(){
   };
 
   // ═══ RENDER: LOG TAB ═══
-  const renderLog=()=>{const fl=logFilter==="all"?logs:logs.filter(l=>l.p===logFilter);return(<div><div style={{padding:"10px 10px 4px",fontSize:15,fontWeight:900}}>📋 Log</div><div style={{display:"flex",gap:4,padding:"0 8px 8px",overflowX:"auto"}}>{["all",...Object.keys(PRODUCTS),"cross"].map(f=>(<button key={f} onClick={()=>setLogFilter(f)} style={{...S.btn(logFilter===f?acc:"transparent",logFilter===f?"#fff":txd),padding:"4px 10px",fontSize:12,border:`1px solid ${logFilter===f?acc:cb}`,whiteSpace:"nowrap"}}>{f==="all"?"All":f==="cross"?"Cross":PRODUCTS[f]?.name||f}</button>))}</div>{!fl.length&&<div style={{...S.crd,textAlign:"center",color:txd,padding:16,fontSize:13}}>No activity</div>}{fl.slice(0,100).map(l=>(<div key={l.id} style={{...S.crd,padding:"10px 12px",marginBottom:2}}><div style={{display:"flex",alignItems:"flex-start",gap:8}}><div style={{paddingTop:5,flexShrink:0}}><div style={{width:8,height:8,borderRadius:"50%",background:l.a==="assemble"?okC:l.a==="adjust"||l.a==="stock_edit"?acc:wnC}}/></div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:2}}><span style={S.tag(l.a==="assemble"?okC:l.a==="adjust"||l.a==="stock_edit"?acc:wnC)}>{l.a}</span>{l.p&&<span style={{fontSize:10,color:txd,fontWeight:800}}>{PRODUCTS[l.p]?.name||l.p}</span>}</div>{editLogId===l.id?(<div style={{marginTop:4}}><input value={editLogText} onChange={e=>setEditLogText(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")saveLogEdit(l.id);if(e.key==="Escape")setEditLogId(null)}} autoFocus style={{...S.inp,marginBottom:4,fontSize:13}}/><div style={{display:"flex",gap:4}}><button onClick={()=>saveLogEdit(l.id)} style={{...S.bSm(okC),flex:1}}>Save</button><button onClick={()=>setEditLogId(null)} style={{...S.bSm(dark?"#444":"#ccc",tx),flex:1}}>Cancel</button></div></div>):(<div style={{fontSize:13,fontWeight:800,lineHeight:1.3}}>{l.d}</div>)}<div style={{fontSize:10,color:txd,marginTop:2,fontWeight:600}}>{fmtTS(l.ts)}</div></div><div style={{display:"flex",flexDirection:"column",gap:4}}><button onClick={()=>{setEditLogId(l.id);setEditLogText(l.d)}} style={S.iBtn}>✏️</button><button onClick={()=>deleteLog(l.id)} style={{...S.iBtn,color:dnC+"aa"}}>🗑️</button></div></div></div>))}{logs.length>0&&<div style={{padding:"8px 10px"}}><button onClick={clearLogs} style={{...S.btn("transparent",dnC),border:`1px solid ${dnC}`,width:"100%",fontSize:12}}>🗑️ Clear All</button></div>}</div>)};
+  const renderLog=()=>{const fl=logFilter==="all"?logs:logs.filter(l=>l.p===logFilter);return(<div><div style={{padding:"10px 10px 4px",fontSize:15,fontWeight:900}}>📋 Log</div><div style={{display:"flex",gap:4,padding:"0 8px 8px",overflowX:"auto"}}>{["all",...Object.keys(PRODUCTS),"cross"].map(f=>(<button key={f} onClick={()=>setLogFilter(f)} style={{...S.btn(logFilter===f?acc:"transparent",logFilter===f?"#fff":txd),padding:"4px 10px",fontSize:12,border:`1px solid ${logFilter===f?acc:cb}`,whiteSpace:"nowrap"}}>{f==="all"?"All":f==="cross"?"Cross":PRODUCTS[f]?.name||f}</button>))}</div>{!fl.length&&<div style={{...S.crd,textAlign:"center",color:txd,padding:16,fontSize:13}}>No activity</div>}{fl.slice(0,100).map(l=>(<div key={l.id} style={{...S.crd,padding:"10px 12px",marginBottom:2}}><div style={{display:"flex",alignItems:"flex-start",gap:8}}><div style={{paddingTop:5,flexShrink:0}}><div style={{width:8,height:8,borderRadius:"50%",background:l.a==="assemble"?okC:l.a==="adjust"||l.a==="stock_edit"?acc:wnC}}/></div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:2}}><span style={S.tag(l.a==="assemble"?okC:l.a==="adjust"||l.a==="stock_edit"?acc:wnC)}>{l.a}</span>{l.p&&<span style={{fontSize:10,color:txd,fontWeight:800}}>{PRODUCTS[l.p]?.name||l.p}</span>}</div>{editLogId===l.id?(<div style={{marginTop:4}}><input value={editLogText} onChange={e=>setEditLogText(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")saveLogEdit(l.id);if(e.key==="Escape")setEditLogId(null)}} autoFocus style={{...S.inp,marginBottom:4,fontSize:13}}/><div style={{display:"flex",gap:4}}><button onClick={()=>saveLogEdit(l.id)} style={{...S.bSm(okC),flex:1}}>Save</button><button onClick={()=>setEditLogId(null)} style={{...S.bSm(dark?"#444":"#ccc",tx),flex:1}}>Cancel</button></div></div>):(<div style={{fontSize:13,fontWeight:800,lineHeight:1.3}}>{l.d}</div>)}<div style={{fontSize:10,color:txd,marginTop:2,fontWeight:600}}>{fmtTS(l.ts)}</div></div><div style={{display:"flex",flexDirection:"column",gap:4}}>{l.changes&&<button onClick={()=>(l.a==="assemble"||l.a==="sub_build")?setConfirmUndo(l.id):(undoLog(l.id))} style={{...S.iBtn,color:wnC+"cc"}} title="Undo">↩️</button>}<button onClick={()=>{setEditLogId(l.id);setEditLogText(l.d)}} style={S.iBtn}>✏️</button><button onClick={()=>deleteLog(l.id)} style={{...S.iBtn,color:dnC+"aa"}}>🗑️</button></div></div></div>))}{logs.length>0&&<div style={{padding:"8px 10px"}}><button onClick={clearLogs} style={{...S.btn("transparent",dnC),border:`1px solid ${dnC}`,width:"100%",fontSize:12}}>🗑️ Clear All</button></div>}</div>)};
 
   // ═══ RENDER: SETTINGS ═══
   const renderSettings=()=>{
@@ -932,7 +1239,7 @@ function App(){
     <div style={{padding:"12px 12px 4px",fontSize:15,fontWeight:900}}>⚙️ Settings</div>
     <div style={{padding:"8px 10px 2px",fontSize:10,fontWeight:900,color:acc,letterSpacing:.5}}>🔧 MANAGE</div>
     <div style={S.crd}><div style={{display:"flex",flexDirection:"column",gap:6}}>
-      {[{k:"bom",i:"📋",l:"BOM / Recipes",d:`${Object.keys(PRODUCTS).length} products · ${bomCount} variants`},{k:"colors",i:"🎨",l:"Colors",d:`${Object.keys(CLR).length} colors`},{k:"products",i:"📦",l:"Products",d:`${Object.keys(PRODUCTS).length} products`},{k:"parts",i:"🔩",l:"Parts",d:`${PARTS.length} parts`},{k:"links",i:"🔗",l:"Cross-Links",d:`${CROSS.length} links`}].map(m=>(<button key={m.k} onClick={()=>m.k==="bom"?setShowBomModal(true):setShowManage(m.k)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:dark?"#0e1019":"#f5f6f9",borderRadius:10,border:`1px solid ${m.k==="bom"?(acc+"44"):(dark?"#1a1d2e":"#eceef3")}`,cursor:"pointer",textAlign:"left",fontFamily:"'Nunito',sans-serif"}}><span style={{fontSize:20}}>{m.i}</span><div style={{flex:1}}><div style={{fontWeight:900,fontSize:14,color:tx}}>{m.l}</div><div style={{fontSize:11,color:txd,fontWeight:700}}>{m.d}</div></div><span style={{color:txd,fontSize:16}}>›</span></button>))}
+      {[{k:"bom",i:"📋",l:"BOM / Recipes",d:`${Object.keys(PRODUCTS).length} products · ${bomCount} variants`},{k:"subasm",i:"🔧",l:"Sub-Assemblies",d:`${SUBASM.length} sub-assemblies`},{k:"colors",i:"🎨",l:"Colors",d:`${Object.keys(CLR).length} colors`},{k:"products",i:"📦",l:"Products",d:`${Object.keys(PRODUCTS).length} products`},{k:"parts",i:"🔩",l:"Parts",d:`${PARTS.length} parts`},{k:"links",i:"🔗",l:"Cross-Links",d:`${CROSS.length} links`}].map(m=>(<button key={m.k} onClick={()=>m.k==="bom"?setShowBomModal(true):setShowManage(m.k)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:dark?"#0e1019":"#f5f6f9",borderRadius:10,border:`1px solid ${m.k==="bom"||m.k==="subasm"?(acc+"44"):(dark?"#1a1d2e":"#eceef3")}`,cursor:"pointer",textAlign:"left",fontFamily:"'Nunito',sans-serif"}}><span style={{fontSize:20}}>{m.i}</span><div style={{flex:1}}><div style={{fontWeight:900,fontSize:14,color:tx}}>{m.l}</div><div style={{fontSize:11,color:txd,fontWeight:700}}>{m.d}</div></div><span style={{color:txd,fontSize:16}}>›</span></button>))}
     </div></div>
     <div style={{padding:"8px 10px 2px",fontSize:10,fontWeight:900,color:acc,letterSpacing:.5}}>☁️ SYNC & DATA</div>
     <div style={S.crd}><button onClick={pullCloud} disabled={syncing} style={{...S.btn(acc),width:"100%",height:38,borderRadius:10}}>{syncing?"Syncing...":"⬇️ Pull from Cloud"}</button>{lastSync&&<div style={{fontSize:10,color:txd,marginTop:5,textAlign:"center",fontWeight:700}}>Last: {fmtTS(lastSync.getTime())}</div>}</div>
@@ -965,6 +1272,7 @@ function App(){
   // ═══ MAIN RENDER ═══
   return(<div style={S.app}>
     {toast&&<div className={toastAnim==="enter"?"toast-enter":"toast-exit"} style={S.toast}>{toast.msg}</div>}
+    {!connectionOk&&<div style={{position:"fixed",top:toast?56:8,left:"50%",transform:"translateX(-50%)",background:"#f59e0b",color:"#000",padding:"6px 16px",borderRadius:10,fontWeight:800,fontSize:12,zIndex:9998,boxShadow:"0 4px 16px rgba(245,158,11,.4)",animation:"offlinePulse 2s ease infinite",fontFamily:"'Nunito',sans-serif",textAlign:"center",maxWidth:"88%",whiteSpace:"nowrap",transition:"top .3s ease"}}>⚠️ Offline — changes saved locally</div>}
     {showClear&&(<div className="modal-bg" style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.8)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(6px)"}}><div className="modal-card" style={{...S.crd,margin:0,maxWidth:300,width:"100%",textAlign:"center",padding:"24px 20px",borderRadius:16}}><div style={{fontSize:44,marginBottom:8}}>{showClear==="reset"?"🔄":"⚠️"}</div><h2 style={{marginTop:0,color:showClear==="reset"?wnC:dnC,fontSize:20,fontWeight:900}}>{showClear==="reset"?"RESET NUMBERS?":"CLEAR ALL?"}</h2><p style={{color:txd,marginBottom:18,fontSize:13,fontWeight:700}}>{showClear==="reset"?"Zeros stock & clears logs. Product config stays.":"Deletes stock, logs, notes, AND config."}</p><div style={{display:"flex",flexDirection:"column",gap:8}}><button onClick={()=>setShowClear(null)} style={{...S.btn(okC),width:"100%",height:42,fontSize:14,borderRadius:10}}>✅ Cancel</button><button onClick={()=>{if(showClear==="reset"){resetNumbers()}else{wipeData()}setShowClear(null)}} style={{...S.btn("transparent",showClear==="reset"?wnC:dnC),border:`2px solid ${showClear==="reset"?wnC:dnC}`,width:"100%",height:42,fontSize:14,borderRadius:10}}>{showClear==="reset"?"🔄 Reset":"🚨 Delete"}</button></div></div></div>)}
     {confirmAsm&&(<div className="modal-bg" style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.75)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(6px)"}}><div className="modal-card" style={{...S.crd,margin:0,maxWidth:340,width:"100%",textAlign:"center",padding:"24px 20px",borderRadius:16}}>
       <div style={{fontSize:40,marginBottom:8}}>{PRODUCTS[confirmAsm.pid]?.icon}</div>
@@ -972,9 +1280,24 @@ function App(){
       <div style={{fontSize:13,color:txd,marginBottom:10,lineHeight:1.4}}>Make <strong style={{color:CLR[confirmAsm.color]?.bg}}>{confirmAsm.qty} {CLR[confirmAsm.color]?.lb}</strong> {PRODUCTS[confirmAsm.pid]?.name}{confirmAsm.qty>1?"s":""}?{calcMax(confirmAsm.pid,confirmAsm.color,stock)<confirmAsm.qty&&(<div style={{color:wnC,fontSize:11,marginTop:4,fontWeight:900}}>⚠️ Parts will go below 0</div>)}</div>
       {/* Show what will be deducted */}
       <div style={{textAlign:"left",maxHeight:"30vh",overflowY:"auto",marginBottom:12}}>
-        {getProductParts(confirmAsm.pid).map(p=>{
+        {(()=>{const bp=bomProfiles[confirmAsm.pid]?.[confirmAsm.color];return getAsmRequirements(confirmAsm.pid).map(p=>{
+          if(bp&&bp[p.id]==="_skip")return(<div key={p.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"3px 6px",fontSize:11,fontWeight:700,opacity:.4}}>
+            <span style={{flex:1,textDecoration:"line-through"}}>{p._isSub?"🔧 ":""}{p.n}</span>
+            <span style={{fontSize:9,color:dnC,fontWeight:800}}>SKIPPED</span>
+          </div>);
+          if(p._isSub){
+            const sc=getPartColorForAsm(p,confirmAsm.color,confirmAsm.pid)||confirmAsm.color;
+            if(sc==="_skip")return null;
+            const cur=stock[p.id]?.[sc]||0;
+            const aft=Math.max(0,cur-confirmAsm.qty*(p.per||1));
+            return(<div key={p.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"3px 6px",fontSize:11,fontWeight:700}}>
+              <span style={{flex:1}}>🔧 {p.n}</span>
+              <CBadge color={sc} CLR={CLR} size={8}/>
+              <span style={{minWidth:60,textAlign:"right",color:aft<=0?dnC:txd}}>{cur}→{aft}</span>
+            </div>);
+          }
           const mc=getPartColorForAsm(p,confirmAsm.color,confirmAsm.pid);
-          if(!mc)return null;
+          if(!mc||mc==="_skip")return null;
           const cur=stock[p.id]?.[mc]||0;
           const aft=Math.max(0,cur-confirmAsm.qty*(p.per||1));
           return(<div key={p.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"3px 6px",fontSize:11,fontWeight:700}}>
@@ -982,14 +1305,54 @@ function App(){
             <CBadge color={mc} CLR={CLR} size={8}/>
             <span style={{minWidth:60,textAlign:"right",color:aft<=0?dnC:txd}}>{cur}→{aft}</span>
           </div>);
-        })}
+        })})()}
       </div>
       <div style={{display:"flex",gap:8}}><button onClick={()=>setConfirmAsm(null)} style={{...S.btn(dark?"#252836":"#e0e3ea",tx),flex:1,height:40,fontSize:13,borderRadius:10}}>Cancel</button><button onClick={confirmDoAssemble} style={{...S.btn(okC),flex:1,height:40,fontSize:13,borderRadius:10}}>Confirm</button></div>
     </div></div>)}
 
+    {/* Sub-Assembly Build Confirmation Modal */}
+    {confirmSaBuild&&(()=>{
+      const sa=SUBASM.find(s=>s.id===confirmSaBuild.saId);
+      if(!sa)return null;
+      return(<div className="modal-bg" style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.75)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(6px)"}}><div className="modal-card" style={{...S.crd,margin:0,maxWidth:340,width:"100%",textAlign:"center",padding:"24px 20px",borderRadius:16}}>
+        <div style={{fontSize:40,marginBottom:8}}>🔧</div>
+        <div style={{fontSize:17,fontWeight:900,marginBottom:6}}>Build Sub-Assembly</div>
+        <div style={{fontSize:13,color:txd,marginBottom:10,lineHeight:1.4}}>Build <strong style={{color:CLR[confirmSaBuild.color]?.bg}}>{confirmSaBuild.qty} {CLR[confirmSaBuild.color]?.lb}</strong> {sa.n}?{calcSubAsmMax(sa,confirmSaBuild.color,stock)<confirmSaBuild.qty&&(<div style={{color:wnC,fontSize:11,marginTop:4,fontWeight:900}}>⚠️ Component parts will go below 0</div>)}</div>
+        <div style={{textAlign:"left",maxHeight:"30vh",overflowY:"auto",marginBottom:12}}>
+          {sa.components.map(comp=>{
+            const part=allParts.find(p=>p.id===comp.partId);if(!part)return null;
+            const mc=(comp.colorMap&&comp.colorMap[confirmSaBuild.color])||comp.color||(part.c.includes(confirmSaBuild.color)?confirmSaBuild.color:(part.c.length===1?part.c[0]:null));if(!mc)return null;
+            const cur=stock[comp.partId]?.[mc]||0;
+            const aft=Math.max(0,cur-confirmSaBuild.qty*(comp.per||1));
+            return(<div key={comp.partId} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"3px 6px",fontSize:11,fontWeight:700}}>
+              <span style={{flex:1}}>{part.n}</span>
+              <CBadge color={mc} CLR={CLR} size={8}/>
+              <span style={{minWidth:60,textAlign:"right",color:aft<=0?dnC:txd}}>{cur}→{aft}</span>
+            </div>);
+          })}
+          <div style={{borderTop:`1px solid ${cb}`,marginTop:6,paddingTop:6,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"3px 6px",fontSize:11,fontWeight:800,color:okC}}>
+            <span style={{flex:1}}>📦 {sa.n} stock</span>
+            <CBadge color={confirmSaBuild.color} CLR={CLR} size={8}/>
+            <span style={{minWidth:60,textAlign:"right"}}>{stock[sa.id]?.[confirmSaBuild.color]||0}→{(stock[sa.id]?.[confirmSaBuild.color]||0)+confirmSaBuild.qty}</span>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:8}}><button onClick={()=>setConfirmSaBuild(null)} style={{...S.btn(dark?"#252836":"#e0e3ea",tx),flex:1,height:40,fontSize:13,borderRadius:10}}>Cancel</button><button onClick={confirmDoSubAsmBuild} style={{...S.btn(okC),flex:1,height:40,fontSize:13,borderRadius:10}}>Confirm</button></div>
+      </div></div>);
+    })()}
+
+    {confirmUndo&&(()=>{const l=logs.find(x=>x.id===confirmUndo);if(!l||!l.changes)return null;return(<div className="modal-bg" style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.75)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20,backdropFilter:"blur(6px)"}}><div className="modal-card" style={{...S.crd,margin:0,maxWidth:340,width:"100%",textAlign:"center",padding:"24px 20px",borderRadius:16}}>
+      <div style={{fontSize:40,marginBottom:8}}>↩️</div>
+      <div style={{fontSize:17,fontWeight:900,marginBottom:6}}>Undo {l.a==="assemble"?"Assembly":"Sub-Assembly Build"}?</div>
+      <div style={{fontSize:12,color:txd,marginBottom:10,lineHeight:1.4}}>{l.d}</div>
+      <div style={{textAlign:"left",maxHeight:"30vh",overflowY:"auto",marginBottom:12}}>
+        {l.changes.map((ch,i)=>{const p=allItems.find(x=>x.id===ch.partId);return(<div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"3px 6px",fontSize:11,fontWeight:700}}><span style={{flex:1}}>{p?.n||ch.partId}</span><CBadge color={ch.color} CLR={CLR} size={8}/><span style={{minWidth:60,textAlign:"right"}}>{ch.after}→{ch.before}</span></div>)})}
+      </div>
+      <div style={{display:"flex",gap:8}}><button onClick={()=>setConfirmUndo(null)} style={{...S.btn(dark?"#252836":"#e0e3ea",tx),flex:1,height:40,fontSize:13,borderRadius:10}}>Cancel</button><button onClick={()=>{undoLog(confirmUndo);setConfirmUndo(null)}} style={{...S.btn(wnC),flex:1,height:40,fontSize:13,borderRadius:10}}>↩️ Undo</button></div>
+    </div></div>)})()}
+
     {/* BOM Editor Modal */}
     <Modal show={!!bomEditing} onClose={()=>{setBomEditing(null);setShowBomModal(true)}} title={`📋 ${bomEditing?((bomEditing.variantKey?'Edit':'New')+' Recipe — '+(PRODUCTS[bomEditing.pid]?.name||'')):''}`} theme={theme}>
-      {bomEditing&&<BomEditor pid={bomEditing.pid} variantKey={bomEditing.variantKey} profile={bomEditing.profile} PRODUCTS={PRODUCTS} PARTS={PARTS} CROSS={CROSS} CLR={CLR} onSave={(pid,vk,mapping)=>{saveBomProfile(pid,vk,mapping);setShowBomModal(true)}} onClose={()=>{setBomEditing(null);setShowBomModal(true)}} theme={theme}/>}
+      {bomEditing&&<BomEditor pid={bomEditing.pid} variantKey={bomEditing.variantKey} profile={bomEditing.profile} PRODUCTS={PRODUCTS} PARTS={PARTS} CROSS={CROSS} SUBASM={SUBASM} CLR={CLR} onSave={(pid,vk,mapping)=>{saveBomProfile(pid,vk,mapping);setShowBomModal(true)}} onClose={()=>{setBomEditing(null);setShowBomModal(true)}} theme={theme}/>}
     </Modal>
 
     {/* BOM Manager Modal (from Settings) */}
@@ -1006,6 +1369,7 @@ function App(){
     <Modal show={showManage==="products"} onClose={()=>setShowManage(null)} title="📦 Products" theme={theme}><MgrProducts PRODUCTS={PRODUCTS} PARTS={PARTS} onAdd={addProduct} onEdit={editProduct} onDel={deleteProduct} theme={theme} toast={showToast}/></Modal>
     <Modal show={showManage==="parts"} onClose={()=>setShowManage(null)} title="🔩 Parts" theme={theme}><MgrParts PRODUCTS={PRODUCTS} PARTS={PARTS} CLR={CLR} onAdd={addPart} onEdit={editPart} onDel={deletePart} theme={theme} toast={showToast}/></Modal>
     <Modal show={showManage==="links"} onClose={()=>setShowManage(null)} title="🔗 Cross-Links" theme={theme}><MgrCross PRODUCTS={PRODUCTS} CROSS={CROSS} CLR={CLR} onAdd={addCross} onEdit={editCross} onDel={deleteCross} theme={theme} toast={showToast}/></Modal>
+    <Modal show={showManage==="subasm"} onClose={()=>setShowManage(null)} title="🔧 Sub-Assemblies" theme={theme}><MgrSubAsm PRODUCTS={PRODUCTS} PARTS={PARTS} CROSS={CROSS} SUBASM={SUBASM} CLR={CLR} onAdd={addSubAsm} onEdit={editSubAsm} onDel={deleteSubAsm} theme={theme} toast={showToast}/></Modal>
 
     <div style={{background:dark?"#0d0f18ee":"#ffffffee",borderBottom:`1px solid ${dark?"#1a1d2e":"#e0e3ea"}`,position:"sticky",top:0,zIndex:95,backdropFilter:"blur(16px)"}}>
       <div style={{padding:"6px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${dark?"#ffffff08":"#00000008"}`}}>

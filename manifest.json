@@ -1,0 +1,18 @@
+{
+  "name": "Little Star Moulding",
+  "short_name": "Moulding",
+  "description": "Inventory management for Little Star factory",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0c14",
+  "theme_color": "#0a0c14",
+  "icons": [
+    {
+      "src": "moulding icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
